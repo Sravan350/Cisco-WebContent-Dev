@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Market Place Production</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css"> 
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+	<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<style>
+.spark-marketplace {width:30%;float:left;}
+.iframe {width:70%;float:right;}
+#token {margin-bottom: 15px;}
+@media screen and (max-width: 600px) {
+	.spark-marketplace {width:100%;}
+	.iframe {width:100%;float:left;}
+} 
+</style>
+	<script type="text/javascript">
+	 
+	var guestDomain = 'depot.ciscospark.com';
+	function onMessage(messageEvent) {  
+		if (messageEvent.origin == "https://" + guestDomain) {
+			if (messageEvent.data["connectIntegration"]) {
+				if(messageEvent.data["statusCode"]==200){
+					console.log("connectIntegration");
+				} else {}	
+			}						
+			if (messageEvent.data["disconnectIntegration"]) {
+				if(messageEvent.data["statusCode"]==200){
+					console.log("disconnectIntegration");
+				} else {}
+			}	
+			if (messageEvent.data["resize"]) {
+				iFrameID = document.getElementById('guestFrame1');
+				var iframeHeight=messageEvent.data["height"]+"px";
+				iFrameID.setAttribute('height', iframeHeight);
+				//el.setAttribute('width', messageEvent.data["width"]+"px");
+				//console.log("Height:::: "+$("#guestFrame1").height($("#guestFrame1").contents().height()));
+				
+				console.log("Market place height is "+iframeHeight);
+				//console.log("market place width is "+messageEvent.data["width"]);
+				alert(10+iFrameID.contentWindow.document.body.scrollHeight + "px");
+			}
+		}
+	}
+
+	var windowProxy1;
+	window.onload=function(){ 
+			// Create a proxy window to send to and receive message from the guest iframe
+			windowProxy1 = new Porthole.WindowProxy('https://' + "183.82.99.100:8443" + '/CiscoWebcontent/proxy.html', 'guestFrame1');
+			windowProxy1.addEventListener(onMessage);			
+	};
+
+	$(document).ready(function(){
+
+		$("#add-config").click(function (e){
+			console.log("here");
+			var id = $("#intId").val();
+			var token = $("#token").val();
+			var action = $("#action").val();
+			if(id==0){alert("Please select Integration");} else {
+				$("#guestFrame1").attr('src', "https://depot.ciscospark.com/anypoint/api/integrations/htmlContent?action="+action+"&integrationId="+id+"&userId="+token);
+			}
+		});
+	});
+
+	</script> 
+
+
+</head>
+
+<body >
+
+<div class="spark-marketplace">
+	<h1>Production</h1>  <br>
+	<div class="large-12 medium-12 columns">
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>Integration App</b></label></div>						
+			<div class="large-10 medium-10 columns" >
+			<select name="int_id"  id="intId" class="dropdown">
+				<option value="0">Select</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M5N2Y4OGZhMjEzYWRiMWNlMzkwNmNjYWZhNDMwN2QxYWJkMWU0NzI1YmJhYTEzN2ZjMTlhYWRjZDE3ZDRhODNj">Bitbucket</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4ODIwNTU1MzlhMzdhOWU5NjFlNzViNDFhODI5ZDExOGMzYzBhNjZlMmJlZTFiZmEwYzBjZGMxOTc3OTI0MzUw">Trello</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzZTFmZmY0OTU5MzNmYWFiOTQ1MGQ1Yjg0NDY5MTU2M2QwNzk2NDNiNmNiOTViNmU0ZDg4ZDk2NWVlMjhkYTYz">GitHub</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M1YzkzYjk5NTU4MzZjODVlM2UwMjgyOTE5ZWJiM2FlMDZkZDQ4YWQyMTBlYzY0OGYwNDQyODE5ZmUzYzYwN2Uy">PagerDuty</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MyM2UxYjkyYjEzODVkMGI4YTQ4NjM5NTY5MjgxMDYxY2NlM2IzYTg3OGI5NjAwZjIyZWE0ZWNmN2E1MzNkOTEy">Codeship</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwYTM3MTUyYWZjNjJkNTZhN2RkZTYwOTdlZjI1OTQ2YmU0NDY3NTcxMWZlZmE4MmNmYzQ3NjY5MjU1NzllZWQy">Box</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4MDhhY2YzNTA1NjFiNjg5NmNkYWJhOWEzMjg5MDYwYWU2Y2E5YWRmODZmNDVlNGZlMzQ3ZTgxNDY4NWQ2ODA3">JIRA</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NlYzFiMzYyM2ExNWQ3ZDgzNjc4Y2NmMWNjZjczMzYxODcxNDA4ZTVjNTEzNmY4YzAzNTJlYjY0MTc3YmQwMTE2">MailChimp</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M1YWZmMTVmODMxMjE4YWI0NmMzMGNmNTI0ZDU5YmJkNTA3NWFmMjVmM2RjNzYxYjEwYjA5MmZhYmUyZmVmNTJl">New Relic</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzOTkxMzY0ZGFmOTk5YmM3ZWI1OGYzNTdiOWY1MjdjMDRhZmNlYzYxMjliMjRmZDI2NzQzNzFmYzlmYTczNTIy">Salesforce</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M0NTExM2QzY2Y5YWVlYmY4Zjk4NDg5OGE3YTBmM2M2MTk2MjEzODBjMzY0MzU4ZTBmNTBjNmQwZjRhYTk3N2Fk">ServiceNow</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzNWJhMWNlYTVlNWMwNDdhNmYwNTc1ZjE1NjU0MWZiMmY1OGQ1NDczMDdkNmUyMWYzNDQ3NzBiNzdmOGMxNWFh">Google Drive</option>	
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M3MTAzMmMwZmI5YWE5ZWRjNTIzZGM5MWZiMWY4MmU0ODMxYjQ1OGVlMGE2M2NiZDE0NDI0MDQ5MjE1ZDU3M2Uw">Zendesk</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NkM2JmMmU2YTQxNmE3NDg0ZGE5OGYyNGFkOTljZTMwZjYzYTczNTBmNGY0MzBjMWFkZjk0M2E0ODcxZDZkZGYx">Dropbox</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NiN2Q1NTI3ZGVmMTI1ZmJkNWIxNTQ3ZDc2MmUxMTUxMTY4YmZmMDA1Y2NhZmQ0MjY5ODZiYzI3OGQ1ODMxNTVi">Jenkins</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NjMjUxNjg1MDgwNDExMDNiZThiODQ5Mjg3NzkzZmEyNjE2ZGViMjM5MmM3MjU0ZmZmYTk3M2NjMTg4MzQ5MWQy">Wunderlist</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NmYzVjOWMzZWQxY2E5ODRkOTc5YTUyYzFiMjUxOWI2NjYyZDNhODkxNDRlNDJiZDJhY2UzYzg0MzJiNGI2ZDQy">DocuSign</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzODZkYTNhNjFhOGZkYzBmOWI2NDVkNjAzYWZmMjM1ODUxODBkYWIzMTdjN2ExMDMzMmJkOWYxOGE2MmJjNzUy">Stripe</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MxODBkYWYwM2Q3ZGEwOTcwNTQzMzQ5OTllMmQ2NGYxYTU2ZDRlMDRjMzIzMGM3NjEzMmE3NjUwYzkwY2ZkMmM3">Papertrail</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwNWIzYzU5OGNiY2VkMGIyY2E0YjlhNjZmZDI5YjQyYjNkMzVmOTI2ZTgzNzNkYTU1N2ViYjY1ZTBiZmZlOTQ5">Basecamp</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4NTcwMGQzNjA0Y2RhYWM1YWMyZmY3NDNlMDExMjBjZDExOTdkOGY4OTE5NzQ3ZmQwMmY3ZDRiYmZlOGEyMWM0">Twitter</option>	
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzZTYxZWM5ZDAzNTMwZTNjNTc0MTQ2YjdmMzVjOTllYjFmMGQzOGJiOTA2OWEyNGIzZjM2MTY2NTAwMzFhNTIw">OneDrive</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwNWY1MWQ2MTFiYzFkOTU0MjY3NWY1ZmQ3N2RkMWI0YTRhZDI5ZTEyZTc1YTc0ZGVhNjQ2ZDcwOTgzY2ZkZjcz">GoogleCalendar</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NjMmU4YzdiZDVhNmM4YTE5NzQ0ZTBkMTdjZGQzODU4MGZlNmU0ZDFlNWY5MTQ1ZTc1NjgyNzNiMGI3MTBlYWM1">UserVoice</option>				
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MxOGZiZWJkMmQ4OWQ1Y2JiYTZlYzY3OGE0MzNhYWQ3YzYyZjMyYzBhZWU4NWU2MGEwMDE4ZDI5NjRlZmZjNmFi">Asana</option>
+			<!--	<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzYzRlMmVlZGNhYjZhNDY3ZTk4MjM1ZjllMjdiMDZlZjIwZDRkMzJjMjI2ZjYyYTBlYmZmMzUxMTY4MzczMjVj">Jive</option>-->
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NkMTFhNjJiMzE2OTcyMzQzNTEyM2MzNDI2NWQyNDM0Yzk3Yzc4NWQ4ODU0ZTI1ZDdmOTI4Zjg4NzgwMTVlMmI2">OneDrive for Business</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NmZmQ0YmU4YWVjY2UxZTc2NDQ3YTA3YTVhMTdhOTE2ZjlhNTM1OTBhNDc2ZjEzOTFhZmJjZjMyZmI3ZWI2Yjkx">SmartSheet</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M0MGFlZTgzYTk3ZWQyNjMyNTg1Y2EwMTU1OWU2MDM4MmY1NTYwOTkwODQwNGI0ZmYyMTU3Mzk1ZjFkZWUwODVm">Sharepoint</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwNWIzNDk4ZmMwZDAxN2NkMTIyNDZjMjA2NDA1YmZiMDE1MzRjYjdjYThhOGJjOWUyMGNiNTc2YjQxMTA2OGRj">RSS</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NmNTYxMjk0ZGUxYTgwZDE2OTdhM2UxMjUyNGEzZjZiZTUxNjBlOTA3NGY1NDY3NmY2MDkzZjJkMzdlMGM5ODJi">Office365Calendar</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M3MjU0ZTk0OWFkNjY1ODlmZjA0MDVmZDRhMzM2YjY1NmNkOTE0OWI1ZGVhYzdhNTAyNDM5MTIyZTMwYjg4MGM1">xMatters</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MxMzgzNTRlNDI4YmFiZmY2YWRlMjViMTIxNjcxNmMyNzgzMTZlZmJiNWFhNjgyZTA1MzQ1NmI4YjA1ZTZlY2Y5">OneNote</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4NDUyZmMyNTQ2ZWU5NjBiNWNjN2VkZTBhNGQ4NTdkZTcwMTcyNTMwN2VjZWI3ZWRiYTY5YzRlZDBjZDE2OTBj" style="display:block;">Marketo</option>
+			</select>
+			<!--<input type="text" name="int_id" id="intId" value="1" placeholder="Id">-->
+			</div>
+		</div>
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>User ID</b></label></div>
+			<div class="large-10 medium-10 columns">
+				<input type="text" name="int_id" id="token" style="width:250px" value=""> <!-- Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI -->
+			</div>
+		</div>
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" >
+				<label><b>Action</b></label>
+			</div>
+			<div class="large-10 medium-10 columns" >
+				<!--<input type="text" name="action" id="action" value="CONNECT">-->
+				<select name="action"  id="action" class="dropdown">
+					<option value="LIST">LIST</option>
+					<option value="CONNECT">CONNECT</option>
+					<option value="DISCONNECT">DISCONNECT</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="large-8 medium-8 columns"><br>
+		<button class="button" id="add-config">Submit</button>
+	</div>
+</div>
+<br>
+<!--  <iframe id="guestFrame1" name="guestFrame1" width="500px" frameborder="0" src="http://183.82.99.100:7080/CiscoWebcontent/createbitbucket.html?integrationId=ABCDEF&token=1234567">
+-->
+<div class="iframe">
+	<iframe id="guestFrame1" name="guestFrame1" width="100%" frameborder="0" src="">	</iframe>
+	<br><br>
+<!--<h3>Footer</h3>-->
+</div>
+</body>
+</html>

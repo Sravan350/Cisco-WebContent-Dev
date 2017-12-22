@@ -1,0 +1,19 @@
+LIST-STYLE-TYPE
+====================
+
+Which reminds me: the numbers don't have to be decimals. They can be anything that list-style-type can be. Namely:
+disc (• • •)
+circle (○ ○ ○)
+square (▪ ▪ ▪)
+decimal (1 2 3)
+decimal-leading-zero (01, 02, 03)
+lower-roman (i ii iii)
+upper-roman (I II III)
+lower-greek (α β γ)
+lower-latin (a b c)
+upper-latin (A B C)
+armenian (Ա Բ Գ)
+georgian (ა ბ გ)
+lower-alpha (a b c)
+upper-alpha (A B C)
+

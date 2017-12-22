@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Market Place</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css"> 
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+	<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<style>
+.spark-marketplace {width:30%;float:left;}
+.iframe {width:70%;float:right;}
+#token {margin-bottom: 15px;}
+@media screen and (max-width: 600px) {
+	.spark-marketplace {width:100%;}
+	.iframe {width:100%;float:left;}
+} 
+</style>
+	<script type="text/javascript">
+	
+	var user_id = "";
+	var integration_id = "";	
+	var spark_token = "";
+	var spark_refresh_token = "";
+	function getDateTime1 (expireTime) {
+		var current = new Date();
+		var newDate = new Date(current.getTime() + (expireTime*1000));
+		year = "" + newDate.getFullYear();
+		month = "" + (newDate.getMonth() + 1); if (month.length == 1) { month = "0" + month; }
+		day = "" + newDate.getDate(); if (day.length == 1) { day = "0" + day; }
+		hour = "" + newDate.getHours(); if (hour.length == 1) { hour = "0" + hour; }
+		minute = "" + newDate.getMinutes(); if (minute.length == 1) { minute = "0" + minute; }
+		second = "" + newDate.getSeconds(); if (second.length == 1) { second = "0" + second; }
+		return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second;
+	}
+	
+
+	function saveSparkToken1(){
+		console.log("saveSparkToken...,,,...,  .");
+		var jsonObject={};
+		jsonObject["accessToken"] = spark_token;
+		jsonObject["expires"]=getDateTime1(1209599);
+		jsonObject["integrationId"] = integration_id;
+		jsonObject["refreshToken"] = spark_refresh_token;
+		jsonObject["refreshExpires"]=getDateTime1(6138273);
+		jsonObject["userId"]=user_id;
+		var jsonString=JSON.stringify(jsonObject);
+		$.ajax({url: 'https://depot.ciscospark.com/anypoint/api/clients/tokens',
+			async:true,
+			type: "POST",
+			data: jsonString,
+			contentType: "application/json",
+			dataType: "json",
+			beforeSend: function(xhr) {
+				xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+				xhr.setRequestHeader("Access-Control-Allow-Methods", "POST");
+				xhr.setRequestHeader("Access-Control-Allow-Headers", "*");
+			  },
+			success: function(result){		
+				console.log("Spark token saved");
+				saveSparkTokenResponse="success";
+			},
+			error: function (error) {
+				saveSparkTokenResponse="failure";
+				console.log("error occured while saving spark token");
+			}
+		});	
+	}
+
+	$(document).ready(function(){
+
+		$("#add-config").click(function (e){
+			
+			console.log("here");
+			integration_id = $("#intId").val();
+			user_id = "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI";//$("#user_id").val();
+			
+			spark_token = "NGJhNDBhYjktM2Y3OS00MDJiLTkxODItZTliNjY1MjdlZjRiYmM3MjFhYTItMWZk";
+			spark_refresh_token = "";
+			//bit
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzAyM2RmYmMwLTQ5MjUtNDc1NC05ZDJiLTdkMjE0NmY4ZDllMg") {
+				spark_token = "ZjFiOGEzZjEtM2VhMi00YTMzLTllYzYtZDI1YzFjZGEzZTIwMDBhZDVjOTktOWQ3";
+				spark_refresh_token = "ZWYyNDI3YTItNjcwYS00NmFmLWFjNDctM2EwZjM5ODNmOGQ0NDk4Y2FkYjQtNGVk";
+			}
+			//trello
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL2RhOGI1MTYxLWNmZTgtNGNmOS1iNGI3LTQwOGNiN2E3NjYyNA") {
+				spark_token = "MjNlMTQxMmItODM5MC00MmNhLTkzY2UtMDI2NTIzN2FmZWQxZWE1MjlkOWQtODJj";
+				spark_refresh_token = "YzkyNzA4Y2EtZmY5My00NWM1LWIyOGItNGQ2MDU4ZDMxMzhkMWMyOGQ1MDctOWZk";
+			}
+			//codeship
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzYxZDU4NGMzLTliMWMtNGQxOC1hMGFlLTU3ZDZiMWFiNWM4ZA") {
+				spark_token = "MjNmMmRmNjItMjk5OC00NjU5LTk3MzQtNjE2YWQyZjUwZDRkMTA3OTU3NTMtNTEy";
+				spark_refresh_token = "MWRjMDgxOTQtYjhhYy00NzhlLTk1NjYtMjMyOGE1N2UwZDMxYWMwNTBkYjctYTBj";
+			}
+			//github
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL2UyMzcwN2U2LTAxMDEtNDJhZS05ZDJjLTEwNmExZmE5MjM5ZQ") {
+				spark_token = "N2MzYzM3ZjgtYjQ4MS00MDJlLTkyNTctYWU5NTE0Yjg4Mjg4MmQ1MmI5NzItM2Y1";
+				spark_refresh_token = "NThjNWUxNmYtMWJjOC00N2YzLTk3NjMtNWZmNjhkYTVjZGQ0MThjZjdjMjItNjk4";
+			}
+			//pagerduty
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzkxYWZhN2RiLWYyMTMtNDg5NS1iMzI3LWViZTZhMzAwZmFlMw") {
+				spark_token = "YTRjOGJlMDQtNWY3OC00OTAwLWFlNGItNzZhNWUzODZlYzE3ZmE3ZGY1MTMtM2U3";
+				spark_refresh_token = "NTE1NjczMzAtMDIyZC00MDBlLWI0NjYtNjk4ZjU4N2Q1Njk5NzJjMDljNTktYTRj";
+			}
+			//Box
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzk4ZGM0YzQ4LWZjMmUtNDBhMi1hNjE5LTY2ZGFmZjY5MTc5Zg") {
+				spark_token = "ZGRlYmRmYjktNmQyNS00OTJjLWE2ZDctZTdhNWY4MWU0ODk3NmNmZjI0M2YtYzVi";
+				spark_refresh_token = "MjYwOGI3NzctOTg2MC00ZGUwLWIwNjMtNWE2OTI3ODBjYzllMDM4MzE3Y2UtZmU1";
+			}
+			//JIRA
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzQwYjk2ZTQzLTZkNmQtNDJjZS1iODk0LWU0MmVhNWJjMDJmNA") {
+				spark_token = "YTFlMTVhNWMtMzU2NC00NmY3LTk4NzEtMzU0MDUzYzllZjZjNWJlNmQzMzQtMmM0";
+				spark_refresh_token = "NGMxMWRiMTktNWM1Ny00ZjYzLTk3ZjctYTMwZTU0NzAyMmI4YzNhNjc3NmUtNWM5";
+			}
+			//Mailchimp
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL2Y4NWZlZDI2LWM4YjUtNGRkNy1iYzA2LTM1MjhhNmQwZGM2Ng") {
+				spark_token = "ZjMwOWMyY2QtMjFjMC00YzkyLTk2YmItNmUyZmExYzllN2JkNTczMzBmMDYtY2Mw";
+				spark_refresh_token = "MDk1ODFmZDAtOWIxOS00MzJiLTg3MTUtN2NhZDhhZGUzODBiOTZhZGViNWEtZDdl";
+			}
+			//New Relic
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzM2YmRiYzk5LTE3YzEtNDI1Ny05YzQyLTkwMDQzN2VjN2RiMg") {
+				spark_token = "NjkyM2EzMjUtZjRlNy00NDA3LTkzZGUtZTRhODg1YjFlZDBhOWE5N2MzNTctZjJj";
+				spark_refresh_token = "ZTI4OGMyNDctNDM4ZS00MjIwLWFiYzctZmM2Y2U2MGZiMDk1ZmNmNDBiOTUtNTA2";
+			}
+			//Salesforce
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzJhYzJkODE3LTQ2YzQtNGJkZS04NWQyLTI3ZTliZmE1MzA3YQ") {
+				spark_token = "MTdiZjFkMTItN2U5YS00OTRhLTk0NDAtN2E5NGU2ZTJiM2IyOTQ2YTlhNjktODIw";
+				spark_refresh_token = "MTA3ZWJiMjItNzI5MS00MTUwLTlmOTgtMDhkYTZkMWE5MDQ0MDc4YjIwYzgtYzQz";
+			}
+			//ServiceNow
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzQ3YWM4MGJkLTY4ZGEtNDNjYS04YjUzLTgwYzNjNGFjZDQwYw") {
+				spark_token = "YzZiMzdkODUtNTY3MS00YTgzLTgzNGMtNDYyNjBlZDljNDEwNjUxZTFmNTEtZTU4";
+				spark_refresh_token = "NTZmNDcxZTktNDFiZS00OWUxLThlY2QtZjA3YmVkMWVhYzQ5YjdiYmQyZTktMjc3";
+			}
+			//Google Drive
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzY4MzI2OGQzLTI2YjAtNDQ1OC1iMzViLWFmODcwYjU2MTYyNg") {
+				spark_token = "NTBlNmRmNTYtOTExNS00NTc3LWFkODMtN2I2ZjdkZDgyNjdmMmUxNTRmMjktM2Ex";
+				spark_refresh_token = "ODAzYjU1ZjEtMGU5ZS00ZjRmLTk3YjEtMTVlNzUyNGE4NTVjMDgxMjBkNTEtNzY4";
+			}
+			//Zendesk
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzY4Y2JjMWZiLTc0YTQtNGI1OS05M2JhLTZhNzE2MmU1YTEyNg") {
+				spark_token = "NWQ0YjhjZjMtODJmNS00NzM2LTg5ODktZmYyM2Y1NDcwNTlhODVlZGZjNjEtNWU2";
+				spark_refresh_token = "YWViMGE2MGEtOTI0NC00ZDc2LTliNmYtNTk1YjQyMTdkOWY5MGY1ODgxNzAtMzVl";
+			}
+			//Dropbox
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NkM2JmMmU2YTQxNmE3NDg0ZGE5OGYyNGFkOTljZTMwZjYzYTczNTBmNGY0MzBjMWFkZjk0M2E0ODcxZDZkZGYx") {
+				spark_token = "N2I0NzFhM2QtOGMxMy00MGI0LWFlY2EtM2ExZWI0MDc4MzQxYzljMjlkYWUtYmIx";
+				spark_refresh_token = "NDNjZGMxNTAtMjQyYy00MmY0LTg3ZmEtNTRmY2NlNWQ5MTEwMTdjMDEzMzctNGRh";
+			}
+			//Jenkins
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzEzMDY3ZmJkLTgzNzktNDQ5MC05YjRmLTNmZmExYThlY2IzYw") {
+				spark_token = "NWZhYjY1ZDAtNGQ2Yi00N2U4LWE3NGQtOGMwYjA3YjgzMzk3MDY0ZDI0ZWItZDgz";
+				spark_refresh_token = "MWJmZGRjNmMtYjNjOC00NDk4LWJmMWUtYTEwM2ZhOTk3NjdlZTZhZWM0OGUtNmM4";
+			}
+			if(integration_id==0){alert("Please select Integration");} else {
+				saveSparkToken1();
+				//$("#guestFrame1").attr('src', "https://cisco-spark-integration-management-new-dev.cloudhub.io/api/integrations/htmlContent?action="+action+"&integrationId="+id+"&userId="+token);
+			}
+		});
+	});
+
+	</script> 
+
+
+</head>
+
+<body >
+
+<div class="spark-marketplace">
+	<h1>Market place</h1>  <br>
+	<div class="large-12 medium-12 columns">
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>Integration App</b></label></div>						
+			<div class="large-10 medium-10 columns" >
+			<select name="int_id"  id="intId" class="dropdown">
+				<option value="0">Select</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzAyM2RmYmMwLTQ5MjUtNDc1NC05ZDJiLTdkMjE0NmY4ZDllMg">Bitbucket</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL2RhOGI1MTYxLWNmZTgtNGNmOS1iNGI3LTQwOGNiN2E3NjYyNA">Trello</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL2UyMzcwN2U2LTAxMDEtNDJhZS05ZDJjLTEwNmExZmE5MjM5ZQ">GitHub</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzkxYWZhN2RiLWYyMTMtNDg5NS1iMzI3LWViZTZhMzAwZmFlMw">PagerDuty</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzYxZDU4NGMzLTliMWMtNGQxOC1hMGFlLTU3ZDZiMWFiNWM4ZA">Codeship</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzk4ZGM0YzQ4LWZjMmUtNDBhMi1hNjE5LTY2ZGFmZjY5MTc5Zg">Box</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzQwYjk2ZTQzLTZkNmQtNDJjZS1iODk0LWU0MmVhNWJjMDJmNA">JIRA</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL2Y4NWZlZDI2LWM4YjUtNGRkNy1iYzA2LTM1MjhhNmQwZGM2Ng">MailChimp</option>						
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzM2YmRiYzk5LTE3YzEtNDI1Ny05YzQyLTkwMDQzN2VjN2RiMg">New Relic</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzJhYzJkODE3LTQ2YzQtNGJkZS04NWQyLTI3ZTliZmE1MzA3YQ">Salesforce</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzQ3YWM4MGJkLTY4ZGEtNDNjYS04YjUzLTgwYzNjNGFjZDQwYw">ServiceNow</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzY4MzI2OGQzLTI2YjAtNDQ1OC1iMzViLWFmODcwYjU2MTYyNg">Google Drive</option>	
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzY4Y2JjMWZiLTc0YTQtNGI1OS05M2JhLTZhNzE2MmU1YTEyNg">Zendesk</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzE4NjkxMjEwLTAzNWUtNDIyZC1iZGJmLWU3MWJhOGQ4OWVmMg">Dropbox</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OLzEzMDY3ZmJkLTgzNzktNDQ5MC05YjRmLTNmZmExYThlY2IzYw">Jenkins</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NkMTFhNjJiMzE2OTcyMzQzNTEyM2MzNDI2NWQyNDM0Yzk3Yzc4NWQ4ODU0ZTI1ZDdmOTI4Zjg4NzgwMTVlMmI2">OneDrive for Business</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M0MGFlZTgzYTk3ZWQyNjMyNTg1Y2EwMTU1OWU2MDM4MmY1NTYwOTkwODQwNGI0ZmYyMTU3Mzk1ZjFkZWUwODVm">Sharepoint</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NmNTYxMjk0ZGUxYTgwZDE2OTdhM2UxMjUyNGEzZjZiZTUxNjBlOTA3NGY1NDY3NmY2MDkzZjJkMzdlMGM5ODJi">Office 365 Calendar</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M3MjU0ZTk0OWFkNjY1ODlmZjA0MDVmZDRhMzM2YjY1NmNkOTE0OWI1ZGVhYzdhNTAyNDM5MTIyZTMwYjg4MGM1">xMatters</option>
+			</select>
+			<!--<input type="text" name="int_id" id="intId" value="1" placeholder="Id">-->
+			</div>
+		</div>
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>User ID</b></label></div>
+			<div class="large-10 medium-10 columns">
+				<input type="text" name="int_id" id="user_id" style="width:250px" value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI">
+			</div>
+		</div>
+
+	</div>
+
+	<div class="large-8 medium-8 columns"><br>
+		<button class="button" id="add-config">Submit</button>
+	</div>
+</div>
+<br>
+<!--  <iframe id="guestFrame1" name="guestFrame1" width="500px" frameborder="0" src="http://183.82.99.100:7080/CiscoWebcontent/createbitbucket.html?integrationId=ABCDEF&token=1234567">
+-->
+<div class="iframe">
+	<iframe id="guestFrame1" name="guestFrame1" width="100%" frameborder="0" src="">	</iframe>
+	<br><br>
+<!--<h3>Footer</h3>-->
+</div>
+</body>
+</html>

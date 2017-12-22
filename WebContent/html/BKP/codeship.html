@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Codeship Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/scripts.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/jquery-customselect.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/jquery-customselect.css" rel="stylesheet" type="text/css">
+
+<script type="text/javascript">
+	icon_url="";
+    $( document ).ready(function() { 	
+    	save_spark_token_url="/api/clients/tokens";
+		configuration_settings_url="/api/integrations/"+integration_id+"/uiSettings";
+		save_configuration_settings_url="/api/integrations/instances";
+		update_configuration_settings_url="/api/integrations/instances/";
+		delete_instance_url="/api/integrations/instances/";
+		disconnect_integration_url="/api/integrations/instances";
+		list_integration_instances_url="/api/integrations/instances";		
+		removeall_integration_instances_url="bitbucket/removeallinstances";	
+		
+		action=action.toLowerCase();
+		if(action=="connect") {
+			$("#integrations-block").hide();
+			$("#integration-form").hide();
+			saveSparkToken();
+			loadCodeshipForm();
+		} else if(action=="disconnect") {
+			formAction="disconnect";
+			removeAllIntegrationInstances(formAction);		
+		} else {
+			console.log("list");
+			listIntegrations();
+		}	
+    });
+		
+    var OAUTHURL    =   '';
+    var CLIENTID    =   '';
+    var TYPE        =   'code';
+	
+	var auth_url="applications";
+	//var token_url="tokendetails/bitbucket";
+	var token_url="test.html";
+	//var form_data_url="uisettings/bitbucket";
+	var form_data_url="test.html";
+	//var post_form_data_url="saveintegration/bitbucket";
+	var post_form_data_url="test.html";
+	//var list_instances_url="listinstances/bitbucket";
+	var list_instances_url="test.html";
+	//var update_form_data_url="updateintegration/bitbucket";
+	var update_form_data_url="test.html";
+	//var delete_instance_url="deleteInstance";
+	var delete_instance_url="test.html";
+	var removeall_integration_instances_url="bitbucket/removeallinstances";
+	var disconnect_integration_url="disconnectintegration";
+	
+	function setIntegrationAppAuthDetails(int_id) {
+		console.log("int_id.."+int_id);
+		$.ajax({url: auth_url+"?integration_id="+int_id,
+			async: false,
+			success: function(result){
+			console.log("result"+JSON.stringify(result));
+				CLIENTID=result.clientid;
+				OAUTHURL= result.authoriseurl				
+				OAUTHURL=OAUTHURL+'?client_id='+CLIENTID+'&response_type=code';
+				loginWithAuthDetails();	
+			}
+		});		
+	}
+    function loginWithAuthDetails() {
+		console.log("OAUTHURL login url..."+OAUTHURL);
+        var win = window.open(OAUTHURL, "windowname1", 'width=600, height=600'); 
+        var pollTimer = window.setInterval(function() { 
+            try {
+				console.log("login. window.."+win.document.URL);
+                if (win.document.URL.indexOf("code") != -1) {
+                    window.clearInterval(pollTimer);
+                    var url =   win.document.URL;
+                    console.log("url"+url);
+                    acToken =   gup(url, 'code');
+                    tokenType = gup(url, 'token_type');
+                    expiresIn = gup(url, 'expires_in');
+                    win.close();
+                    validateToken(acToken);
+                }
+            } catch(e) {
+            }
+        }, 100);
+    }
+	function validateToken(code) {
+    	console.log("code..."+code);
+		saveIntegrationAppToken(code);
+    	resize();
+    }	
+	function saveIntegrationAppToken(code) {
+		$.ajax({url: token_url+"?code="+code+"&integration_id="+integration_id+"&token="+spark_token,
+			async: false,
+			success: function(result){
+				console.log(result)
+				integration_token=result.access_token;
+				connectIntegration();
+				loadCodeshipForm();
+				$('#integation-form').show();
+			}
+		});
+	}
+	
+	var integration_id="";
+    var integration_token="";
+	var spark_token="";
+	var listResultData="";
+	var instanceData="";
+	var formData="";
+	var formAction="add";
+    var instanceId="";
+	var repo_modified=false;
+	var room_modified=false;
+	var repo_name_old="";
+	var room_id_old="";
+	
+	function listIntegrations() {
+		$("#integrations-block").hide();
+		/* if(localStorage.getItem("formdata")!=null)
+		$("#instance-list-block").show();
+		$("#integation-form").hide(); */
+		
+		var listDataHTML="";			
+		$.ajax({
+			//url: list_instances_url+"?token="+spark_token+"&integration_id="+integration_id,
+			url: list_instances_url,
+			async: false,
+			success: function(result){	
+				$("#instance-list-block").show();
+				//listResultData=result;		
+				if(localStorage.getItem("formdata").length ==0){
+					console.log("in success if");
+					$("#instance-list-block").html(listDataHTML);
+				}else{
+					 console.log("in success else");
+					 listDataHTML+='<div class="large-12 medium-12 columns">';
+						listDataHTML+='<div class="large-8 medium-4 columns integration-details">';
+						listDataHTML+='<img src="images/codeship.png" alt="codeship">';
+						listDataHTML+='<span>Codeship</span><br>';
+						listDataHTML+='<span>Flow Test</span><br>';
+						listDataHTML+='<span>Added: 2016-06-21</span>';
+						listDataHTML+='</div>';
+						listDataHTML+='<div class="large-3 medium-3 columns">';
+						listDataHTML+='<span class="cross-mark remove-config" data-open="remove-integration-popup" ></span>';
+						listDataHTML+='<button class="button edit-config">Edit</button>';
+						listDataHTML+='</div>';
+						listDataHTML+='</div><br><br><br><br>';
+						 $("#instance-list-block").html(listDataHTML);
+				}
+			}
+		});		
+	}
+	function objLength(obj){
+		var i=0;
+		for (var x in obj){
+			if(obj.hasOwnProperty(x)){
+				i++;
+			}
+		} 
+		return i;
+	}
+	function addOrUpdateInstance() {
+		var res = $('form').serializeObject();
+		res = JSON.stringify($('form').serializeObject());//static
+		console.log(res);//static
+		localStorage.setItem("formdata",res);
+		var selectedRoomName=$("#rooms option:selected").text();
+		
+	/* 	
+		var jsonData = {};			
+		jsonData["room_id"] = $("#rooms option:selected").val();;									
+		jsonData["integration_id"] = integration_id;
+		jsonData["integration_token"] = integration_token;
+		jsonData["spark_token"] = spark_token;
+		jsonData["user_id"] = $("#userid").val();
+		jsonData["config"]={};
+		jsonData["config"]["room_name"]= selectedRoomName;
+		jsonData["config"]["repo_id"] = res.repositories;
+		jsonData["config"]["repo_name"]= ($("#repos option:selected").text()).toLowerCase().replace(" ","-");
+		jsonData["config"]["user_name"] = $("#username").val();
+		jsonData["config"]["owner_name"]=$("#ownername").val();
+		jsonData["config"]["description"]= res.description;
+		jsonData["config"]["notifications"]={};			
+		jsonData["config"]["notifications"]["repo"] = res.repo;
+		jsonData["config"]["notifications"]["issue"] = res.issue;
+		jsonData["config"]["notifications"]["pullrequest"] = res.pullrequest;
+		
+		if(formAction=="update") {
+			jsonData["instance_id"] = instanceId;
+			jsonData["repo_modified"] = repo_modified;
+			jsonData["repo_name_old"] = repo_name_old;
+			jsonData["room_modified"] = repo_modified;
+			jsonData["room_id_old"] = room_id_old;
+			post_form_data_url=update_form_data_url;
+			console.log("update integration");
+		}
+		var jsonString = JSON.stringify(jsonData);
+		var notificationslength = objLength(res.repo);
+		notificationslength+=objLength(res.issue);
+		notificationslength+=objLength(res.pullrequest);
+		if(notificationslength==0) {
+			alert("Please select atleast one Event");
+		} else { */
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({url: post_form_data_url,
+				async: false,
+				//type: "POST",
+				//data: jsonString,
+				//contentType: "application/json",
+				//dataType: "json",
+				success: function(result){	
+					$('#success-integration').foundation('open');
+					$('#done-button').click(function() {
+						$('#success-integration').foundation('close');
+						$("#integation-form").hide();
+						listIntegrations();
+						$("#integrations-block").show();
+						//resize();
+					});
+				},
+				error: function (error) {
+					alert('error while saving data' + error);
+				}
+			});
+			$('#loading-block').foundation('close');
+	/* 	}
+		console.log(jsonString); */
+	}
+	function removeIntegrationInstance(instanceId) {
+		$('#loading-block').foundation('open');
+		$.ajax({url: delete_instance_url+"?instanceId="+instanceId,
+			type:"DELETE",
+			async: false,
+			success: function(result){		
+				console.log("removeIntegrationInstance");
+				listIntegrations();
+			},
+            error: function (error) {
+                  alert('Failed to remove instance' + error);
+            }
+		});
+		$('#loading-block').foundation('close');
+	}
+	function removeAllIntegrationInstances(action) {
+		//$('#integation-form').hide();
+		$('#loading-block').foundation('open');
+		$.ajax({url: removeall_integration_instances_url+"?integration_id="+integration_id+"&token="+spark_token,
+			type:"DELETE",
+			async: false,
+			success: function(result){		
+				console.log("removeAllIntegrationInstances");
+				$("#instance-list-block").hide();
+				$("#remove-all-config").hide();
+				if(action="disconnect"){
+					disconnectIntegrationApp();
+				}
+			},
+            error: function (error) {
+                  alert('Failed to remove All Integration Instances' + error);
+            }
+		});
+		$('#loading-block').foundation('close');
+	}
+	function disconnectIntegrationApp() {
+		$.ajax({url: disconnect_integration_url+"?token="+spark_token+"&integrationId="+integration_id,
+			async: false,
+			type:"DELETE",
+			success: function(result){
+				disconnectIntegration();
+				console.log("success disconnectIntegration");
+			},
+            error: function (error) {
+                  alert('Failed to disconnect integration' + error);
+            }
+		});	
+	}
+	function loadCodeshipForm(){
+		var data = {
+				"webhookURL":"https://integrations.ciscospark.com/v1/integrations/pagerduty/00be617f-9256-4c7c-85b2-a80c20b8e221",
+				"Rooms":[{"id":"room1","name":"Room1"},{"id":"room2","name":"Room2"},{"id":"room3","name":"Room3"}],
+			};
+		var rooms = data.Rooms;
+		$("#form").trigger('reset');
+		$.ajax({url: form_data_url+"?sparkAccessToken="+spark_token+"&integration_id="+integration_id,
+			async: false,
+			success: function(result){	
+				//var profiles = $.parseJSON(result[1]);
+				//var rooms = result[0].items;
+				$("input#userid").val("TestUser555");
+				$("input#username").val("Test User");
+				$("#webhookURL").val(data.webhookURL);
+				$("#rooms").empty();
+				$.each(rooms, function(id,obj){
+					//if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#rooms").append($('<option>').text(obj.name).attr('value',obj.id));
+				});
+				
+				$('#integrations-block').hide();				
+				$('#integation-form').show();	
+			},
+            error: function (error) {
+                  alert('error while loading the form data' + error);
+            }
+		});	
+	}
+	$(document).ready(function(){	
+		
+		$('#integation-form').hide();
+		$(document).foundation();
+		$("#rooms").on('change',function(){
+			room_modified=true;
+			console.log("room_modified....");
+		});			
+		$.fn.serializeObject = function() {
+			var o = {};
+			var a = this.serializeArray();
+			$.each(a, function() {
+				if (o[this.name] !== undefined) {
+					if (!o[this.name].push) {
+						o[this.name] = [o[this.name]];
+					}
+					o[this.name].push(this.value || '');
+				} else {
+					console.log(this);
+					o[this.name] = this.value || '';
+				}
+			});
+			return o;
+		};
+		$("#submit-button").click(function (e){
+			e.preventDefault();
+			addOrUpdateInstance();
+			//resize();
+		});
+		$("#cancel-button").click(function (e){
+			e.preventDefault();			
+			$('#integation-form').hide();
+			$('#integrations-block').show();
+			//resize();
+		});
+		$('#add-config').click(function(){
+			//formAction="add";
+			$("#form").trigger('reset');
+			loadCodeshipForm();
+			$('#integation-form').show();
+			$('#integrations-block').hide();
+			//resize();			
+		});
+		$(document).on("click", "#instance-list-block .edit-config" , function(e) {
+			e.preventDefault();
+			console.log("edit instance");
+			//formAction="update";
+			room_modified=false;
+			$("#submit-button").text("Save");
+			document.getElementById("form").reset();
+			$("#rooms").empty();
+			$('#integration-block').hide();
+		//	formAction="update";
+		//	instanceId=this.id;
+		   var formData = localStorage.getItem("formdata");
+		   console.log("formData " + formData);
+			//instanceId=this.id;
+			/* $.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+					console.log("instanceData...."+JSON.stringify(instanceData));
+				}
+			});
+			integration_token = instanceData.IntegrationToken[0].accessToken;
+			spark_token = instanceData.sparkToken[0].accessToken; */
+			loadCodeshipForm();
+			$('#integation-form').show();
+			//resize();
+			/* $("#rooms").val(instanceData.channelId);
+			var config=JSON.parse(instanceData.configJson);
+			$("#repos").val(config.repo_id);
+			$('#description').val(config.description);
+			repo_name_old = config.repo_name;
+			room_id_old = instanceData.channelId;
+			var notifications=config.notifications;
+			var pullrequest = notifications.pullrequest; */
+			var json = JSON.parse(formData);
+			console.log("after parsing "+JSON.stringify(json));
+			$("#rooms").val(json.room);
+			$('#description').val(json.description);
+			$('#webhookURL').val(json.webhookURL);
+			$('#integration-block').show();
+			
+		});
+		$(document).on("click", "#instance-list-block .remove-config" , function() {
+			console.log("test remove");
+			document.getElementById('remove-msg').innerHTML="Are you Sure you  want to remove integration from this room?";					
+			instanceId=this.id;
+			resize();
+		});		
+		$('#remove-integration-btn').click(function(e){
+			e.preventDefault();
+			$('#remove-integration-popup').foundation('close');
+			//removeIntegrationInstance(instanceId);
+			$("#instance-list-block").hide();
+			//resize();
+		});
+		$('#show-popup').click(function(e){
+			e.preventDefault();
+			alert(localStorage.getItem("formdata"));
+	        var formData = localStorage.getItem("formdata");
+	        var formdata = JSON.parse(formData);
+	        var curroom = formdata.room;
+	        $('#curr-room').html('Are you Sure? You want to remove Integration from '+curroom);
+	    });
+		
+		$(document).on("click", "#remove-all-config" , function() {
+			console.log("test remove all");
+			removeAllIntegrationInstances("remove");
+			resize();
+		});
+	});
+</script>
+</head>
+<body>
+	<div class="integration-app" id="codeship">
+		<div id="loading-block" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment while your app is loading</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-image">
+					<img src="http://183.82.99.100:7080/IframeTest/images/loadingImage.gif" alt=".....">
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your
+				integration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns" style="width: 85%; height: 200px; ">
+				<div class="row">
+					<div class="large-1 medium-1 columns"><img alt="icon">	</div>
+					<div class="large-6 medium-6 columns" style="float:left;"><span id="description-label">Codeship</span><br>
+						<span id="addedon-label"></span>
+					</div>
+				</div><br>
+				<p id="remove-msg"></p> 
+				<p id="remove-auth"></p>
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<div class="row">
+					<div class="large-8 medium-5 columns"></div>
+					<div class="large-4 medium-4 columns"><button class="button" id="remove-integration-btn">Remove</button></div>
+				</div>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home" >
+				<div class="row">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns">Codeship Configurations</div>
+						<div class="large-4 medium-4 columns">
+							<button class="button" id="add-config">Add</button>
+							<button class="button" id="remove-all-config">Remove All</button>
+						</div>					
+					</div>
+				</div>
+				<hr>
+				<div id="instance-list-block" class="row">
+					<!-- <div class="large-12 columns">
+						<div class="large-8 medium-4  integration-details columns">
+							 <img alt="trello-img" src="images/trello.png">
+							<span>Codeship</span>
+							<span>Content Testing Room</span> 
+							<span>Added: May 24th, 2016</span> 
+						</div>
+						<div class="large-2 medium-6 columns trello-content">
+							<div class="large-2 medium-5 end columns">
+								<button class="button" id="edit-config">Edit</button>
+							</div>
+							<div class="large-8 medium-5 end remove   columns">
+								 <img src="images/crossmark.png" alt="trello-img" data-open="remove-integration-popup" id="show-popup" aria-controls="remove-integration-popup" aria-haspopup="true" tabindex="0"> 
+							</div>
+						</div>
+					</div>	 -->			
+				</div>
+			</div>
+		</div>
+		<div class="large-12 columns" id="integation-form" >
+			<form name="form" id="form" method="post">
+				<div class="row">
+					<div class="large-12 columns">
+  						<h3>Codeship Configuration</h3><br> 
+  					</div>
+				</div>
+				<div class="row">
+					<div class="large-12 columns">
+  						<label><b>Webhook URL </b></label>
+					<div class="large-3 medium-6 columns">
+           					 When setting up this integration, this is the URL that you will paste into Codeship.
+					</div>
+  					<div class="large-8 medium-3 columns">
+						<input type="text" name="webhookURL" id="webhookURL">					
+					</div>
+					</div>
+				</div><hr>
+				<div class="row">
+					<div class="large-12 columns">
+						<h3>Spark Configuration</h3><br> 
+						<div class="large-8 medium-8 columns">
+							<div class="large-6 medium-6 columns"><label><b>Room</b></label>
+							</div>
+							<div class="large-6 medium-6 columns" >
+								<select name="room"	id="rooms"></select>
+							</div>
+						</div><br>
+						<div class="large-8 medium-8 columns">
+							<div class="large-6 medium-6 columns" >
+								<label><b>Description</b></label>
+							</div>
+							<div class="large-6 medium-6 columns" >
+								<input type="text" name="description" id="description" value="Bit bucket">
+							</div>
+							<input type="hidden" name="userid" id="userid" value="">
+							<input type="hidden" name="username" id="username" value="">						
+							<input type="hidden" name="ownername" id="ownername" value="">
+						</div><br>						
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-6 medium-6 columns" >
+					</div><div class="large-4 medium-4 columns" >
+					</div>
+					<div class="large-4 medium-4 columns" >
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button" id="submit-button">Add Integration</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

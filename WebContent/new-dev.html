@@ -1,0 +1,192 @@
+<!DOCTYPE html> 
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cisco Spark marketplace</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://d24wgzqqegxpap.cloudfront.net/api/css/collab-ui-min.css" rel="stylesheet" type="text/css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/devscript.js"></script> 
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<script>
+	
+	var guestDomain = 'cisco-spark-integration-management-new-dev.cloudhub.io';
+	
+	
+	
+	function onMessage(messageEvent) {  
+		if (messageEvent.origin == "https://" + guestDomain) {
+			if (messageEvent.data["connectIntegration"]) {
+				if(messageEvent.data["statusCode"]==200){
+					console.log("connectIntegration");
+				} else {}	
+			}						
+			if (messageEvent.data["disconnectIntegration"]) {
+				if(messageEvent.data["statusCode"]==200){
+					console.log("disconnectIntegration");
+				} else {}
+			}	
+			if (messageEvent.data["resize"]) {
+				iFrameID = document.getElementById('integrations-frame');
+				var iframeHeight=messageEvent.data["height"]+"px";
+				iFrameID.setAttribute('height', iframeHeight);			
+				console.log("Market place height is "+iframeHeight);
+			}
+		}
+	}
+	var windowProxy1;
+	window.onload=function(){ 
+			// Create a proxy window to send to and receive message from the guest iframe
+			windowProxy1 = new Porthole.WindowProxy('https://' + "183.82.99.100:8443" + '/CiscoWebcontent/proxy.html', 'integrations-frame');
+			windowProxy1.addEventListener(onMessage);			
+	};
+	$(document).ready(function(){
+	    //sessionStorage.setItem('intId', "");
+		$('.integration-page').hide();
+		$('.integrations-home').hide();
+		if(cookies!="") {
+			console.log("cookie found : cookie Name = " +userName+" cVal = "+userId);
+			$('.integrations-home').show();
+		}else{
+			console.log("cookies  empty ");
+			$('#userId-modal').foundation('open');
+		}
+		
+		if(url.indexOf("code")==-1){
+			console.log("code not found ");
+			console.log(" sessionStorage.getItem('isSparkCode'); "+sessionStorage.getItem('isSparkCode'));
+		}else{
+			code=getCode(url, 'code');
+			console.log("code : "+code);
+			var isSparkCode1 = sessionStorage.getItem('isSparkCode');
+			console.log("is spark code ??? "+isSparkCode);
+			if(sessionStorage.getItem('isSparkCode')==true){
+			  console.log("Spar code found and generating access token......");
+			  generateSparkAccessToken(code);
+			}else{
+				var int_id = sessionStorage.getItem('intId');
+				action = "LIST";
+				console.log("integration page ... ");
+				//openIntegrationPage(int_id);
+				 location.replace("");
+				
+			}
+		} 
+		
+		
+		$('.integration-icon > img').on("click",function(){
+			integrationId =  this.id;
+			console.log("IntegrationId "+integrationId+" userId: "+userId);
+			$.each(outhAppIds,function(id,obj){
+				if(obj.id==integrationId){
+					isOauthApp = true;
+					return false;
+				} 
+			});
+			sessionStorage.setItem('intId', integrationId);
+			sessionStorage.setItem('isOauthApp', isOauthApp);
+			getSparkToken();
+		});
+		$('#login-button').on('click',function(e){
+			e.preventDefault();			
+			userId = $('#spark-userId').val();
+			userName = $('#spark-userId option:selected').text();
+			console.log("userName "+userName+ " cvalue "+userId);
+			setCookie(userName, userId, 1);
+			$('#userId-modal').foundation('close');
+			$('.integrations-home').show();
+			
+		});
+	});
+
+</script>
+<style>
+	.market-place{ margin-bottom:40px;}
+	.iframe {width:70%;float:right;padding: 3rem;}
+	.integrations-list{	margin-bottom:45px;	height:auto;}
+	.integration-name{font-size:15px;	margin: 0 0 0 132px;	width:inherit;	}
+	.integration{margin: 0 2px 0 -2px;	}
+	.integration-icon{	margin: 0 0 0 55px;	cursor:hand;	cursor:pointer;	}
+</style>
+
+</head>
+<body>
+	<div class="spark-auth"> 
+		<div id="userId-modal" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-8 medium-8 columns">
+				<label>Select Spark UserId</label>
+				<select name="sparkuser" id="spark-userId">
+					<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS85MGQ5MzYzNy1jNzlmLTQ0MDAtYTBjNC1mZGQ5MjgwMjJhNmU">Vikas</option>
+					<option value="2">Satya</option>
+					<option value="3">Rakesh</option>
+					<option value="4">Ashok</option>
+					<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8xYjY4ZmI1NS1kMjAxLTQ4ZmEtOTU3ZC0yZTQ3ODIwNTFmYmI">Harish Guntha</option>
+					
+				</select>
+			</div>
+			<div class="large-2 medium-2 columns buttons-block">
+				<div class="">
+					<button class="secondary button" id="login-button">Login</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="rows large-12 medium-12 columns integrations-home" >
+		<div class="large-12 medium-12 columns market-place" > <h1 style="margin-left:392px">Cisco Spark Marketplace</h1></div>
+		<div class="large-12 medium-12 columns " >
+			<div class="rows large-1 medium-1 columns" >&nbsp;</div>
+			<div  class="rows large-10 medium-10 columns" >
+				<div class="rows large-12 medium-12 columns integrations-list"  >
+					<div class="large-3 medium-3 columns integration"> 
+						<span class="integration-name">BitBucket </span>
+						<div class="large-6 medium-6 columns integration-icon"  ><img alt="icon" id="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M5N2Y4OGZhMjEzYWRiMWNlMzkwNmNjYWZhNDMwN2QxYWJkMWU0NzI1YmJhYTEzN2ZjMTlhYWRjZDE3ZDRhODNj" src="https://d24wgzqqegxpap.cloudfront.net/api/images/bitbucket/bitbucket.png"></div>
+					</div>
+					<div class="large-3 medium-3 columns integration">	
+						<span class="integration-name">GitHub</span>
+						<div class="large-6 medium-6 columns integration-icon"><img alt="icon" id="github" src="https://d24wgzqqegxpap.cloudfront.net/api/images/github/github.png"></div>
+					</div>
+					<div class="large-3 medium-3 columns integration"> 
+						<span class="integration-name">PagerDuty</span>
+						<div class="large-6 medium-6 columns integration-icon"><img alt="icon" id="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M1YzkzYjk5NTU4MzZjODVlM2UwMjgyOTE5ZWJiM2FlMDZkZDQ4YWQyMTBlYzY0OGYwNDQyODE5ZmUzYzYwN2Uy" src="https://d24wgzqqegxpap.cloudfront.net/api/images/pagerduty/pagerduty.png"></div>
+					</div>
+					<div class="large-3 medium-3 columns integration"> 
+						<span class="integration-name">Codeship</span>
+						<div class="large-6 medium-6 columns integration-icon"><img alt="icon" id="codeship" src="https://d24wgzqqegxpap.cloudfront.net/api/images/codeship/codeship.png"></div>
+					</div>
+				</div>
+				<div class="rows large-12 medium-12 columns integrations-list" >
+					<div class="large-3 medium-3 columns integration"> 
+						<span class="integration-name">Box</span>
+						<div class="large-6 medium-6 columns integration-icon"><img alt="icon" id="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwYTM3MTUyYWZjNjJkNTZhN2RkZTYwOTdlZjI1OTQ2YmU0NDY3NTcxMWZlZmE4MmNmYzQ3NjY5MjU1NzllZWQy" src="https://d24wgzqqegxpap.cloudfront.net/api/images/box/box.png"></div>
+					</div>
+					<div class="large-3 medium-3 columns integration"> 
+						<span class="integration-name">Dropbox</span>
+						<div class="large-6 medium-6 columns integration-icon"><img alt="icon" id="dropbox" src="https://d24wgzqqegxpap.cloudfront.net/api/images/dropbox/dropbox.png"></div>
+					</div>
+					<div class="large-3 medium-3 columns integration">
+						<span class="integration-name">Google Drive</span>
+						<div class="large-6 medium-6 columns integration-icon"><img alt="icon" id="gd" src="https://d24wgzqqegxpap.cloudfront.net/api/images/drive/drive.png"></div>
+					</div>
+					<div class="large-3 medium-3 columns integration"> 
+						<span class="integration-name">Google Calendar</span>
+						<div class="large-6 medium-6 columns integration-icon"><img alt="icon" id="gc" src="https://d24wgzqqegxpap.cloudfront.net/api/images/googlecalendar/googlecalendar.png"></div>
+					</div>
+				</div>
+			</div>
+			<div class="rows large-1 medium-1 columns" >&nbsp;</div>
+		</div>
+	</div>
+	<div class="rows large-12 medium-12 columns integration-page" >
+		<div class="large-2 medium-2 columns" >
+			<img alt="icon" id="integration-icon" src="">
+			<span><button id="action-btn">CONNECT</button></span>
+		</div>
+		<div class="large-10 medium-10 columns iframe" >
+			<iframe src="" width="100%" frameborder="0" height="0" name="integrations-frame"  id="integrations-frame"></iframe><br><br>
+		</div>
+	</div>
+	
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Trello Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/scripts11.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/jquery-customselect.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/jquery-customselect.css" rel="stylesheet" type="text/css">
+
+<script> 
+
+
+	
+</script>
+</head>
+
+<body>
+      
+	<div class="integration-app row" id="trello"><br><br>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading">
+				<img src="https://183.82.99.100:8443/CiscoWebcontent/images/spark-icon.png" alt=".....">
+			</div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block">name and room name</div>
+				<br>
+				<div class="loading-bar"><div class="loading-background"></div>
+					<!---->
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your
+				integration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns">
+			    
+					<div class="row remove-integration-mobile">
+						<div class="large-2 medium-2 columns"><img alt="" src="https://183.82.99.100:8443/CiscoWebcontent/images/trello/trello.png"/></div>
+						<div class="large-6 medium-6 columns" style="float:left;">
+							<label id="description-label">Trello</label>
+							<label id="addedon-label"></label>
+						</div>
+					</div><br class="remove-integration-mobile">
+					<div class="msg-labels">
+						<label id="remove-msg"></label> 
+						<label id="remove-auth"></label>
+					</div>
+				
+				<div class="option-buttons remove-integration-buttons">
+					<label class="remove-popup-cancel"> 
+						<a href="#" id="cancel-remove-integration">cancel</a>
+					</label>
+					<label class="remove-popup-remove">
+						<a href="#" id="remove-integration-btn">remove</a>
+					</label>
+				</div>
+				<button class="close-button remove-integration-mobile" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br class="remove-integration-mobile"><br class="remove-integration-mobile">
+				<button class="button remove-integration-mobile" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home" >
+				<div class="row">
+				<div class="large-12 medium-12 columns">							
+					<div class="large-6 medium-6 columns config-name"><label>Trello Configurations</label></div>
+					<div class="large-6 medium-6 columns">
+						<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+						<button class="secondary button" id="add-config">Add</button>
+					</div>					
+				</div>
+			    </div>
+			    <hr>
+				<div id="instance-list-block" class="row">
+					
+				</div>
+			</div>
+		</div>	
+		<div class="large-12 columns" id="integration-form" >
+			<form name="form" id="form" method="post">
+				
+				<div class="row">
+					<div class="large-12 columns">
+						<h3 class="heading-01">Trello Configuration</h3><br>
+						<div class="large-10 medium-10 columns" style="float:left;">
+							<div class="large-3 medium-3 columns"><label>Trello Board</label></div>						
+							<div class="large-4 medium-4 columns text left">
+								<select name="boards"  id="boards" class="dropdown"><option value="0">Select</option></select>
+							</div>
+							<div class="large-4 left">
+								<span class="has-tip tip-right" id="tooltip" title="Which Trello board would you like to receive notifications for?"
+								data-tooltip><img class="tool-tip"></span>
+							</div>							
+						</div>						
+					</div>
+				</div><div class="row">&nbsp;</div>
+				<div class="row">
+					<div class="large-12 columns">
+						<div class="large-12 medium-12 columns events">
+							<label>Notifications: Board &amp; Lists</label>
+							<div class="events-sub" id="board-list-notifications">
+							    <div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="boardandlistnotifications" id="list-created" value="list-created"><label for="list-created">List	created</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="boardandlistnotifications" id="list-renamed" value="list-renamed"><label for="list-renamed">List Renamed</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="boardandlistnotifications" id="list-moved" value="list-moved-to-board"><label for="list-moved">List moved to other board</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" value="list-archived-unarchived" id="list-archived" name="boardandlistnotification"><label for="list-archived">List archived/unarchived</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="boardandlistnotifications" id="board-renamed" value="board-renamed"><label for="board-renamed">Board renamed</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+																		
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="boardandlistnotifications" id="member-added" value="member-added-to-board"><label for="member-added">Member added to board</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+							</div>
+						</div>
+						<div class="large-12 medium-12 columns">&nbsp;</div>
+						<div class="large-12 medium-12 columns events">	
+							<label>Notifications: Cards</label>
+							<div class="events-sub" id="cards-notifications">
+							    <div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="card-created" value="card-created"><label for="card-created">Card created </label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="card-renamed" value="card-renamed"><label for="card-renamed">Card renamed</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="comment-added" value="comment-added"><label for="comment-added">Comment added to card</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="attachment-added" value="attachment-added"><label for="attachment-added">Attachment added to card</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="description-changed" value="description-changed"><label for="description-changed">Description changed</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="due-date-changed" value="due-date-changed"><label for="due-date-changed">Due date changed</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="label-changed" value="label-changed"><label for="label-changed">Label changed</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="card-member-added" value="member-added"><label for="card-member-added">Member added to card</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>	
+								<div class="large-12 medium-12 columns">
+									<div class="large-6 medium-6 columns checkBox">
+									<input type="checkbox" name="cardnotifications" id="card-archived-unarchived" value="card-archived-unarchived"><label for="card-archived-unarchived">Card archived/unarchived</label>
+									</div>
+									<div class="large-6 medium-6 columns">&nbsp;</div>
+								</div>
+							</div>
+						</div>
+						<div class="large-12 medium-12 columns">&nbsp;</div>
+						<div class="large-12 medium-12 columns events">
+							<label>Notifications: Checklists</label>
+							<div class="events-sub" id="checklists-notifications">
+							    <div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="checkListsnotifications" id="checklist-card-created" value="checklist-card-created"><label for="checklist-card-created">Card created</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="checkListsnotifications" id="checklist-cardmoved" value="checklist-cardmoved"><label for="checklist-cardmoved">Card Moved</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">								
+									<div class="large-6 medium-6 columns checkBox">
+									<input type="checkbox" name="checkListsnotifications" id="checklist-card-renamed" value="checklist-card-renamed"><label for="checklist-card-renamed">Card renamed</label>
+									</div>
+									<div class="large-6 medium-6 columns">&nbsp;</div>
+								</div>
+							</div>
+						</div>
+						
+					</div>
+				</div><hr>
+				<div class="row">
+					<div class="large-10 medium-10 columns">
+						<h3 class="heading-01">Spark Configuration</h3>
+						<br>
+						<div class="large-8 columns">
+							<div class="large-2 medium-2 columns left">
+								<label>Room</label>
+							</div>
+							<div class="large-6 medium-6 columns text left input-left">
+								<select name="room" id="rooms" class="custom-select">
+								<option value='0'>Please Select</option></select>
+							</div>
+						</div><br><br>
+						<div class="large-8 columns">
+							<div class="large-2 medium-2 columns left">
+								<label>Name</label>
+							</div>
+							<div class="large-6 medium-6 columns text left input-left">
+								<input type="text" name="displayName" id="displayName" class="integration-name"	value="Trello">
+							</div>
+							<input type="hidden" name="userid" id="userid" value="">
+							<input type="hidden" name="username" id="username" value="">
+						</div>
+						<br>
+					</div>
+				</div><br>
+				<div class="row">
+					<div class="large-5 medium-5 columns" >&nbsp;</div>
+					<div class="large-4 medium-4 columns left" >
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button secondary" id="submit-button">Add Integration</button>
+					</div>
+				</div><br>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

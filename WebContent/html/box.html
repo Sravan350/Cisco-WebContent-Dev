@@ -1,0 +1,1849 @@
+<!DOCTYPE html>      
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Box integration to Cisco Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://d24wgzqqegxpap.cloudfront.net/api/css/collab-ui-min.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/select2.min.css" rel="stylesheet" />  
+<style>
+.button-control{ bottom: 15px;
+    padding: 0px;
+    position: absolute;
+    right: 13px;
+}
+
+
+#webhook-warning-modal {
+	margin-top : 50%;
+	width: 428px;
+	height: 180px;
+}
+
+@media screen and (max-width: 650px) {
+	.box-info-icon {
+		margin: 1.4rem -2.5rem 0 0;
+	}
+	.edit-remove-icons, .github-edit-remove-icons {
+		margin: -77px 30px 0 0;
+	}
+	.addbot{
+		float:right !important;
+		margin-right:2%;
+		margin-top:2%;
+	}
+}
+.app-config-block{
+	margin-top:50px;
+}
+.configbox{
+	margin-top:100px;
+}
+
+
+
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script type="text/javascript" src="https://d24wgzqqegxpap.cloudfront.net/api/js/porthole.min.js"></script>
+<!--<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/scriptsRoom.js"></script>-->
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/select2.min.js"></script>
+<script>
+	integration_app_icon_url="https://d24wgzqqegxpap.cloudfront.net/api/images/box/box.png";
+	clientAppRevokeMsg = '<p class="integrationAuthMsg"><span class="info-icon" title=""> &nbsp;</span><span>We are facing difficulty while accessing your Box account. Please click on Add to authorize.</span></p>';
+	webhookMessageBanner = '<p class="integrationAuthMsg"><span class="info-icon" title=""> &nbsp;</span><span>This integration has been updated to ensure the notifications are received immediately after the trigger. To use the latest version, please click ADD to reauthorize and create new configurations. Reauthorization will not impact your current configurations.</span></p>';
+	var selected_source_id="0";
+	var source_id_old="";
+	var subsource_id_old = "";
+	var nested_subsource_id_old ="";
+	var application_id="6";
+	var instance_uuid="";
+	var room_id = "";
+    var selectedSourceId = "0";
+    var selectedPoolingSourceId = "";
+	var selected_subfolder_id ="0";
+	var selected_subfolder2_id = "0";
+	//var selectedSource_id_old=0;
+	//var selectedSource_id=0;
+	var eventsMatchFlag = true;
+	var configFlag = false;
+	var folderFlag = false;
+	appName = "Box";
+	var itemslist = [];
+	var subfolders = "";
+	var sublevel2 = "";
+	var isFile = false;
+	var isFile1 = false;
+	var isFile2 = false;
+	var isFile3 = false;
+	//var sourceFound = false; //
+	var source_modified = false; // new
+	var source_level  = "0";
+	var subsource_level = "0";
+	var nested_subsource_level = "0";
+	var selectedEvents = [];
+	var isWebhookConfig = true;
+	var isUpdateInstance = false;
+	var post_form_data_url="test.html";
+	var auth_url="applications";
+var token_url="tokendetails/bitbucket";
+var form_data_url="test.html";
+var post_form_data_url="test.html";
+var list_instances_url="test.html";
+var update_form_data_url="test.html";
+var delete_instance_url="deleteInstance";
+var removeall_integration_instances_url="bitbucket/removeallinstances";
+var disconnect_integration_url="disconnectintegration";
+	var user_id = "Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mMGU2OWMzYi1lMzU4LTQ3ZTUtODQyYy02MWMxMmRlNTVhY2Q";
+	var integration_id = "Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwYTM3MTUyYWZjNjJkNTZhN2RkZTYwOTdlZjI1OTQ2YmU0NDY3NTcxMWZlZmE4MmNmYzQ3NjY5MjU1NzllZWQy";
+	$(document).ready(function(){
+	$(document).foundation();
+	integration_id = "Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwYTM3MTUyYWZjNjJkNTZhN2RkZTYwOTdlZjI1OTQ2YmU0NDY3NTcxMWZlZmE4MmNmYzQ3NjY5MjU1NzllZWQy";
+		
+		
+		//getSparkSpaceDetails = "/api/integrations/"+integration_id+"/getSparkSpaceDetailsBySpaceId";
+		$('#resources').val('');$('#resources1').val('');$('#subfolders').val('');$('#subfolders1').val('');
+		$('#sub_folders').show();$('#sub_files').show();
+		$('#integration-form').hide();
+		action="connect";
+		if(action=="connect") {
+			$("#integrations-block").hide();
+			$("#integration-form").hide();
+			loadBoxForm();
+			//validateIntegrationAppToken();
+		} else if(action=="disconnect") {
+			formAction="disconnect";
+			removeAllIntegrationInstances(formAction);
+		} else {
+			var app_code =   gup(document.referrer, 'code');
+			if(app_code!="") {
+				generateIntegrationAppToken(app_code); 
+			} else {
+				validateIntegrationAppTokenDB();
+			}
+		} 
+//		$("#rooms").select2();
+		$('#box-icon').attr("src", integration_app_icon_url);
+		//$(".spark-icon").attr("src", spark_icon_url);
+		$('#box #add-config').click(function(e){
+			$("#instance-list-block").hide();
+			$("#integration-form").show();
+			$("#home").hide();
+			$("#form")[0].reset();
+		});
+			/*e.preventDefault();
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-subfolderconfig1-info").hide();
+			$(".edit-itemconfig-info").hide();
+			$(".edit-roomconfig-info").hide();
+			$('.subfolderSelection').hide();
+			$('.subfolderSelection1').hide();
+			
+			$('#pooling-events').css("display","none");
+			$('#webhook-events').css("display","block");
+			
+			$('#webhook-config').css("display","block");
+			$('#pooling-config').css("display","none");
+			
+			$('#event-note').show();
+			
+			//sourceFound = false;
+			isWebhookConfig = true;
+			isUpdateInstance = false;
+			source_level  = "0";
+			subsource_level = "0";
+			selectedEvents = [];
+			$('#create1').prop("disabled",false);
+			$('#update1').prop("disabled",false);
+			formAction="add";			
+			if(listResultData.length != 0){
+			console.log("listresult is there ");
+				$("#submit-button").text("Add");
+				console.log("isClientAppTokenValid in add-config : "+isClientAppTokenValid);
+				if(isClientAppTokenValid){
+					if(isBoxWebhookEnabled){
+					console.log("** is isBoxWebhookEnabled "+isBoxWebhookEnabled);
+						loadBoxForm();
+						loadRooms();
+					}else{
+						console.log("** is isBoxWebhookEnabled else "+isBoxWebhookEnabled);
+						setIntegrationAppAuthDetails(integration_id);
+					}
+				}else {
+					setIntegrationAppAuthDetails(integration_id);
+				}
+			}else{
+				console.log("listresilt is not there +++ = isClientAppTokenValid "+isClientAppTokenValid);
+				$("#submit-button").text("Add Integration");				
+				validateIntegrationAppToken();				
+			};
+		});*/
+		$(document).on("click", ".same-config-yes" , function(e) {
+			console.log("!!!!!! Edit clicked!!!!!!!!!!!!!");
+			isUpdateInstance = false;
+			$('#same-configuration').foundation('close');
+		});
+		$(document).on("click", ".same-config-no" , function(e) {
+			console.log("cancel clicked!!!!!!!!!!!!!");
+			$('#same-configuration').foundation('close');
+			e.preventDefault();			
+			$('#integration-form').hide();
+			$('#integrations-block').show();
+			listIntegrations();
+			resize();
+		});
+		$(document).on("click", ".close-modal" , function(e) {
+			console.log("close clicked!!!!!!!!!!!!!");
+			e.preventDefault();			
+			$('#webhook-warning-modal').foundation('close');
+		});
+		$("#box #resources").on('change',function(){
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-itemconfig-info").hide();
+			$(".edit-roomconfig-info").hide();
+			if($('#resources').val()!=0&&formAction=="update")
+				$(".edit-itemconfig-info").hide();
+			if(source_level=="file" || source_level=="folder" ) {
+				$('.subfolderSelection').hide();
+				$('.subfolderSelection1').hide();
+			}
+		});
+		$("#box #resources1").on('change',function(){
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-itemconfig-info").hide();
+			$(".edit-roomconfig-info").hide();
+			if($('#resources1').val()!=0&&formAction=="update")
+				$(".edit-itemconfig-info").hide();
+		});			
+			
+		$('#resources').change(function () {
+			console.log("resource1 in change1");
+			if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+			if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+			
+			$("#sub_folders").show(); 
+			$("#sub_files").show();   
+			
+			$('.subfolderSelection').hide();
+			$('.subfolderSelection1').hide();
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-subfolderconfig1-info").hide();
+			var itemData = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"];	
+			$.each(itemData["entries"], function(id,obj){
+					if(obj.type=="folder"){
+						if($('#resources').val()==obj.id && $('#resources').val() != '0'){
+							source_level  = "folder";
+							isFile = false;
+							var jsonObject={};
+							jsonObject["integrationId"] = integration_id;
+							jsonObject["userId"] = user_id;
+							jsonObject["sourceId"] = $('#resources').val();
+							jsonString=JSON.stringify(jsonObject);
+							getNestedFolderList(jsonString);
+							return false;
+						}else{
+							if($('#resources').val() == '0'){
+								source_level  = "0";
+							}else if($('#resources').val()==obj.id){
+								source_level  = "file";
+								isFile = true;
+								return false
+							}
+						}
+					}else {
+						isFile = true;
+						source_level = "file";
+						subsource_level = "0";
+						nested_subsource_level = "0";
+						
+						$('.subfolderSelection').hide();
+						$('.subfolderSelection1').hide();					
+						$('#subfolders')[0].options.length = 1;
+					} 
+			});
+			if($('#resources').val()==0 || isFile==false ) {
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',false);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',false);
+				$('#event-note').show();
+			}else {
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',true);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',true);
+				$('#event-note').hide();
+			}
+			resize();
+		});
+		$('#resources1').change(function () {
+		console.log("resource1 in change2");
+			if($('#resources1').val()=="all" || $('#resources1').val()=="rootfolders" || $('#resources1').val()=="rootfiles"){
+				$('.subfolderSelection').hide();
+				$('.subfolderSelection1').hide();
+			}
+			$('#folders').show();
+			$('#files').show();
+			$('.subfolderSelection').hide();
+			$('.subfolderSelection1').hide();
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-subfolderconfig1-info").hide();
+			var itemData = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"];	
+			$.each(itemData["entries"], function(id,obj){
+					if(obj.type=="folder"){
+						if($('#resources1').val()==obj.id && $('#resources1').val() != '0'){
+							source_level  = "folder";
+							isFile = false;
+							var jsonObject={};
+							jsonObject["integrationId"] = integration_id;
+							jsonObject["userId"] = user_id;
+							jsonObject["sourceId"] = $('#resources1').val();
+							jsonString=JSON.stringify(jsonObject);
+							console.log("In resources1 change :"+source_level);
+							getNestedFolderList(jsonString);
+							return false;
+						}else{
+							if($('#resources1').val() == '0'){
+								source_level  = "0";
+							}else if($('#resources1').val()==obj.id){
+								source_level  = "file";
+								isFile = true;
+								return false
+							}
+						}
+					}else {
+						isFile = true;
+						source_level = "file";
+						subsource_level = "0";
+						nested_subsource_level = "0";
+						$('.subfolderSelection').hide();
+						$('.subfolderSelection1').hide();					
+						$('#subfolders')[0].options.length = 1;
+					} 
+			});
+			resize();
+		});
+	$('#subfolders').change(function(){
+		$('#nestedsubfolders').show();
+		$('#nestedsubfiles').show();
+		$('.subfolderSelection1').hide();
+		$(".edit-subfolderconfig-info").hide();
+		$(".edit-subfolderconfig1-info").hide();
+		console.log("On change of subfolder");
+		if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+		if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+			if($('#subfolders').val()!=0&&formAction=="update")
+			$(".edit-itemconfig-info").hide();
+			$.each(subfolders, function(id,obj){
+				if($('#subfolders').val() == obj.id && obj.type=="folder" ){
+					console.log("Folder found in  subfolder id")
+					isFile2 = false;
+					subsource_level = "folder";
+					var jsonObject={};
+					jsonObject["integrationId"] = integration_id;
+					jsonObject["userId"] = user_id;
+					jsonObject["sourceId"] = $("#subfolders").val();
+					console.log("Selected subfolder *****..."+$("#subfolders").val());
+					jsonString=JSON.stringify(jsonObject);
+				
+					if(isWebhookConfig) getSecondNestedFolderList(jsonString);
+					return false;
+				}else {
+					if($("#subfolders").val() == '0') {subsource_level= "0"; nested_subsource_level= "0"; }
+					else{subsource_level  = "file";nested_subsource_level= "0"; isFile2 = true; } 
+					$('.subfolderSelection1').hide();
+					$('#subfolders1')[0].options.length = 1;
+				} 
+			});
+			console.log("*** Create checkbox disabled *** "+isFile2);
+			if($('#subfolders').val()==0 ||  isFile2==false){
+				$('#create1').prop('disabled',false);
+				$('#update1').prop('disabled',false);
+				$('#event-note').show(); 
+			}else {
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',true);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',true);
+				$('#event-note').hide(); 
+			}
+			resize();
+		});
+	$('#subfolders1').change(function(){
+		console.log("On change of subfolder2");
+		$(".edit-subfolderconfig-info").hide();
+		$(".edit-subfolderconfig1-info").hide();
+		if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+		if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+			if($('#subfolders1').val()!=0&&formAction=="update")
+			$(".edit-itemconfig-info").hide();
+			$.each(sublevel2, function(id,obj){
+				if($('#subfolders1').val() == obj.id && obj.type=="folder" ){
+					console.log("Folder found in  subfolder2 id")
+					isFile3 = false;
+					nested_subsource_level = "folder";
+					return false;
+				}else {
+					if($('#subfolders1').val() !=0 ) nested_subsource_level = "file";
+					else nested_subsource_level = "0";
+					isFile3 = true;
+					
+				} 
+			});
+			console.log("*** Create checkbox disabled *** "+isFile3);
+			if($('#subfolders1').val()==0 ||  isFile3==false){
+				$('#create1').prop('disabled',false);		
+				$('#update1').prop('disabled',false);
+				$('#event-note').show(); 				
+			}else {
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',true);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',true);
+				$('#event-note').hide(); 
+			}
+			resize();
+		});
+		
+		
+		
+		
+		$.fn.serializeObject = function() {
+			var o = {};
+			var a = this.serializeArray();
+			$.each(a, function() {
+				if (o[this.name] !== undefined) {
+					if (!o[this.name].push) {
+						o[this.name] = [o[this.name]];
+					}
+					o[this.name].push(this.value || '');
+				} else {
+					o[this.name] = this.value || '';
+				}
+			});
+			return o;
+		};
+		
+		
+		
+		
+		
+		
+		
+		
+		$("#private_message").click(function(){
+			if($(this).is(':checked'))
+				$("#rooms").attr('disabled', 'disabled');
+			else
+                $('#rooms').removeAttr('disabled');
+		});
+		
+		
+		
+		
+		
+		$(".addbot").click(function(){
+			if($("#rooms").val()!=0){
+				alert("Bot Added to "+$("#select2-rooms-container").html()+" space");
+			}else{
+				alert("Please select space");
+			}
+			return false;
+		});
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		$("#submit-button").click(function(e){
+			e.preventDefault();
+			addOrUpdateInstance();
+		});
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	});
+	function validateIntegrationAppToken() {
+	console.log(get_app_token_url+"?userId="+user_id)
+		$.ajax({
+			url: get_app_token_url+"?userId="+user_id,
+			async:true,
+			type: "get",
+			success: function(result){
+				if(result.tokenResult.tokenId) {
+					validateIntegrationAppspecificToken();
+				} else {
+					setIntegrationAppAuthDetails(integration_id);
+				}
+			},
+			error:  function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function validateIntegrationAppspecificToken(){
+		$.ajax({
+			url: configuration_settings_url+"?userId="+user_id,
+			async: true,
+			success: function(result){
+					if(result["integrationSpecificSettings"]["isValidToken"] != undefined && result["integrationSpecificSettings"]["isValidToken"]==false ){
+						isClientAppTokenValid = false;
+						console.log("***** validateIntegrationsApp token  with validateClientToken *********");
+						//$('.client-app-warning').html(clientAppRevokeMsg);
+						//$('#integrations-block').show();
+						//$('.client-app-warning').show();
+						//setIntegrationAppAuthDetails(integration_id);
+						if(listResultData.length==0){
+							setIntegrationAppAuthDetails(integration_id);
+						}
+					}else{
+						if(result["integrationSpecificSettings"]["settings"]["isWebhookEnabled"]==false ){
+							setIntegrationAppAuthDetails(integration_id);
+						}else{
+							loadBoxForm();
+						}
+					}
+				},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   } else{
+				   alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function validateSpecificAppToken(app_code){
+		$.ajax({
+			url: configuration_settings_url+"?userId="+user_id,
+			async: true,
+			success: function(result){
+					if(result["integrationSpecificSettings"]["isValidToken"] != undefined && result["integrationSpecificSettings"]["isValidToken"]==false ){
+						isClientAppTokenValid = false;
+						console.log("***** validateIntegrationsApp token  with validateSpecificAppToken() *********");
+						if(app_code!="") getIntegrationAppTokenDetails(app_code);
+						else setIntegrationAppAuthDetails(integration_id);						
+						console.log("isClientAppTokenValid ***** "+isClientAppTokenValid);
+					}else if(result["integrationSpecificSettings"]["settings"]["isWebhookEnabled"]==false ){
+						isBoxWebhookEnabled = false;
+						if(app_code!="") getIntegrationAppTokenDetails(app_code);
+					}else {
+						isClientAppTokenValid = true;
+						listIntegrations();
+					}
+				},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   } else{
+				   alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function getListInstances(){
+		$.ajax({url: list_integration_instances_url+"?userId="+user_id+"&integrationId="+integration_id,
+			async:true,
+			success: function(result){
+			 instanceList = result;
+			 if(instanceList.length != 0 && instanceList.message == undefined){
+				 console.log("instanceList in getListInstances()"+instanceList.length);
+				 listIntegrations();
+			 }else{
+				 loadBoxForm();
+			 } 
+			 // listIntegrations();
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }
+			}
+		});
+	}
+	function setIntegrationAppAuthDetails() {
+		var OAUTHURL    =   '';
+		var CLIENTID    =   '';
+		var TYPE        =   'code';
+		$.ajax({url: application_auth_details_url,
+			async:true,
+			success: function(result){
+				CLIENTID=result.clientId;
+				OAUTHURL= result.authorizationEndpoint				
+				OAUTHURL=OAUTHURL+'?client_id='+CLIENTID+'&response_type='+TYPE;
+				loginWithAuthDetails(OAUTHURL);	
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});		
+	}
+	function loginWithAuthDetails(oauthURL) {
+        isRedirect=true;
+		if(isRedirect) {
+			if(formAction=="add") {
+				window.top.location.href = oauthURL;
+			} else {
+				var authReqMsg ="";
+				authReqMsg+='<hr class="instance-hr"><div class="large-12 medium-12 columns instance-background">';
+				authReqMsg+='<div class="no-config-msg">You are not authorized to this integration. Click Add to continue.</div></div>';
+				$('#integrations-block').show();
+				$("#instance-list-block").html(authReqMsg);
+			}			
+		} else{
+			var win = window.open(oauthURL, "windowname1", 'width=600, height=600'); 
+			if(win){ 
+			}else{
+				alert(popblockedMessage); 
+				return false;
+			}
+			var pollTimer = window.setInterval(function() { 
+				try {
+					if (win.document.URL.indexOf("code") != -1) {
+						window.clearInterval(pollTimer);
+						var url =   win.document.URL;
+						accessCode = gup(url, 'code');
+						tokenType = gup(url, 'token_type');
+						expiresIn = gup(url, 'expires_in');
+						win.close();
+						getIntegrationAppTokenDetails(accessCode);
+					}
+				} catch(e) {	
+					console.log('error while getting authorization code..'+e);
+				}
+			}, 100);
+		}	
+    }
+	function getIntegrationAppTokenDetails(code) {
+		var jsonObject={};
+		jsonObject["integrationId"] = integration_id;
+		jsonObject["authSettings"] = {};
+		jsonObject["authSettings"]["code"] = code;
+		jsonString=JSON.stringify(jsonObject)
+		$.ajax({url: token_url,
+			async:true,
+			type: "POST",
+			data: jsonString,
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){
+				var tokenDetails=result["integrationSpecificAuthDetails"];
+				var jsonObject1={};
+				jsonObject1["applicationId"] = application_id;
+				jsonObject1["integrationId"] = integration_id;
+				jsonObject1["accessToken"] = tokenDetails.accessToken;
+				var tokenExpireTime="";
+				var refreshTokenExpireTime="";
+				jsonObject1["expires"] = tokenDetails.expires;
+				jsonObject1["refreshToken"] = tokenDetails.refreshToken;
+				jsonObject1["refreshExpires"] = tokenDetails.refreshExpires;
+				var jsonString=JSON.stringify(jsonObject1);
+				saveIntegrationAppToken(jsonString);
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function saveIntegrationAppToken(jsonData){
+		$.ajax({url: save_app_token_url+"?userId="+user_id,
+			async:true,
+			type: "POST",
+			data: jsonData,
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){
+				connectIntegration();
+				console.log("isClientAppTokenValid in saveToken *** "+isClientAppTokenValid);
+				if(isClientAppTokenValid == false) getListInstances();
+				else {
+				 console.log("****  ****");
+				 if(isBoxWebhookEnabled == false) getListInstances();
+				 else loadBoxForm();
+				   //listIntegrations();
+				} 
+			},
+			error: function(xmlHttpRequest, error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   } else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});	
+	}
+function getNestedFolderList(jsonString){
+		var itemFlag=false;	
+		var subFolderMatchFlag = false;
+		$(".subitems-loading").show();
+		$(".edit-subfolderconfig-info").hide();
+		
+		$.ajax({url: configuration_settings_url+"?userId="+user_id,
+				async:true,
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){
+					console.log("in success getNestedFolderList");
+					if(result["postSpecificIntegrationSettings"]["subSourceId"]!= undefined){
+						console.log("sub folder/file found..");
+						subfolders = result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"]["entries"]; 
+						$(".subitems-loading").hide();
+					}else{
+						$("#integration-form").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+					$('#subfolders')[0].options.length = 1;	
+						var subfolders_count=0;
+						var subfiles_count = 0;
+						if(subfolders.length != 0){
+							$.each(subfolders, function(id,obj){
+								if(obj.type == "folder"){
+									subfolders_count++;
+									$("#sub_folders").append($('<option>').text(obj.name).attr('value',obj.id));	
+									$("#sub_folders").show();
+								}else if(obj.type=="file"){
+									subfiles_count++;
+									$("#sub_files").append($('<option>').text(obj.name).attr('value',obj.id));	
+									$("#sub_files").show();
+								}
+								if(obj.type=="file" &&formAction=="update" && selected_subfolder_id==obj.id ){
+									console.log("obj.type **:"+obj.type);
+									console.log("***** In Edit-getNestedFolderList-obj.type=='file'  source_level : "+source_level);
+									subsource_level = "file";
+									nested_subsource_level = "0";
+									$('#create1').prop("disabled",true);$('#create1').prop("checked",false);
+									$('#update1').prop("disabled",true);$('#update1').prop("checked",false);
+									$('#event-note').hide(); // 
+								}else if(obj.type=="folder" &&formAction=="update" && selected_subfolder_id==obj.id ){
+									subsource_level = "folder";
+									subFolderMatchFlag = true;
+									$('#event-note').show();
+									console.log("***** In Edit-getNestedFolderList-obj.type=='folder'  source_level : "+source_level+" subsource_level : "+subsource_level);
+								}
+								if(obj.type=="folder"  && selected_subfolder_id==obj.id ){
+									isFile1 = false;
+								}else{
+									if(obj.type=="file" && selected_subfolder_id==obj.id)
+									isFile1 = true;
+								}
+								if(formAction=="update" && selected_subfolder_id==obj.id || selected_subfolder_id=="all" && itemFlag==false){
+									if(selected_subfolder_id=="all"){
+										selected_subfolder_id=0;
+									}else{
+										selected_subfolder_id=obj.id;
+									}
+									itemFlag=true;
+								}
+							});
+							if(subfolders_count==0) { 
+								$("#sub_folders").hide();
+							}
+							if(subfiles_count==0) {
+								$("#sub_files").hide();
+							}
+							console.log("subfolders_count :: "+subfolders_count+" subfiles_count "+subfiles_count);
+							/* if(source_level=="file" && source_level=="folder"){ console.log(">>>>>"); $('.subfolderSelection').hide();$('.subfolderSelection1').hide();}
+							else {console.log("<<<<<<"); $('.subfolderSelection').show();}*/
+							$('.subfolderSelection').show();
+							resize();
+						}else{
+							isFile1 = false;
+							subsource_level = "0";
+							nested_subsource_level = "0";
+							$('#event-note').show(); //
+							console.log("***** In Edit-getNestedFolderList-No sub folders  source_level : "+source_level+" subsource_level : "+subsource_level);
+							console.log("subfolder length.." + subfolders.length + "  selected_subfolder_id" + selected_subfolder_id);
+							$('.subfolderSelection').hide();
+							if(selected_subfolder_id!=0&&selected_subfolder_id!="all"){
+								$(".edit-subfolderconfig-info").show();
+							}else{
+								selected_subfolder_id = "0";
+								$(".edit-subfolderconfig-info").hide();
+							}
+						}
+						
+						
+						if(formAction=="update" && itemFlag ==false && selected_subfolder_id!=0){
+							selected_subfolder_id = "0";
+							console.log("sub folder not exist.");
+							$(".edit-subfolderconfig-info").show();
+							$(".edit-subfolderconfig1-info").hide();
+						}
+						$("#subfolders").val(selected_subfolder_id);
+						if(subFolderMatchFlag && formAction=="update" && isWebhookConfig){
+							console.log("Webhook config is true "+ isWebhookConfig);
+							var jsonObject2={};
+							jsonObject2["integrationId"] = integration_id;
+							jsonObject2["userId"] = user_id;
+							jsonObject2["sourceId"] = $("#subfolders").val();
+							jsonString=JSON.stringify(jsonObject2);
+							getSecondNestedFolderList(jsonString);
+						}
+						$.each(subfolders, function(id,obj){	
+							if(selected_subfolder_id==obj.id && obj.type!="folder" && subfolders.length!=0){
+								console.log("**** getting Nested folders method() "+$("#subfolders option:selected").text());
+								isFile1 = true;
+								return false;
+							}else isFile1 = false;
+							
+						});
+						selected_subfolder_id="0";
+						resize();
+				},
+				error: function(xmlHttpRequest,error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   } else{
+						$(".subfolderSelection").hide();
+						$(".subfolderSelection1").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+				}
+			});
+	}
+	function getSecondNestedFolderList(jsonString){
+		console.log("in getSecondNestedFolderList");
+		var itemFlag1=false;	
+		var subFolderMatchFlag1 = false;
+		$(".subitems-loading1").show();
+		$(".edit-subfolderconfig-info").hide();
+		$(".edit-subfolderconfig1-info").hide();
+		$.ajax({url: configuration_settings_url+"?userId="+user_id,
+				async:true,
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){
+					console.log("in  getSecondNestedFolderList success ");
+					if(result["postSpecificIntegrationSettings"]["subSourceId"]!= undefined){
+						sublevel2 = result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"]["entries"]; 
+						$(".subitems-loading1").hide();
+					}else{
+						$("#integration-form").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+					$('#subfolders1')[0].options.length = 1;
+						var nestedfolders_count=0;
+						var nestedfiles_count=0;
+						if(sublevel2.length != 0){
+							$.each(sublevel2, function(id,obj){	
+								if(obj.type == "folder"){
+									nestedfolders_count++;
+									$("#nestedsubfolders").append($('<option>').text(obj.name).attr('value',obj.id));	
+								}else if(obj.type=="file"){
+									nestedfiles_count++;
+									console.log("^^^^^^^^^^^^^^^^^^^"+nestedfiles_count);
+									$("#nestedsubfiles").append($('<option>').text(obj.name).attr('value',obj.id));	
+								}
+								//$("#subfolders1").append($('<option>').text(obj.name).attr('value',obj.id));				
+								console.log("########################################");
+								if(obj.type=="file" && formAction=="update" && selected_subfolder2_id==obj.id ){
+									console.log("***** In Edit-getNestedFolderList-obj.type=='file'  source_level : "+source_level+" subsource_level : "+subsource_level);
+									nested_subsource_level = "file";
+									selected_subfolder2_id=obj.id;
+									itemFlag1=true;
+									$('#create1').prop("disabled",true);$('#create1').prop("checked",false);
+									$('#update1').prop("disabled",true);$('#update1').prop("checked",false);
+								}else if(obj.type=="folder" && formAction=="update" && selected_subfolder2_id==obj.id ){
+									nested_subsource_level = "folder";
+									subFolderMatchFlag1 = true;
+									selected_subfolder2_id=obj.id;
+									itemFlag1=true;
+									console.log("***** In Edit-getNestedFolderList-obj.type=='folder'  source_level : "+source_level+" subsource_level : "+subsource_level);
+								}
+								console.log("########################################");
+							});
+							console.log("nestedfolders_count :: nestedfiles_count "+nestedfolders_count+" "+nestedfiles_count);
+							if(nestedfolders_count== 0) $('#nestedsubfolders').hide();
+							if(nestedfiles_count== 0) $('#nestedsubfiles').hide();
+							if(subsource_level=="file"){$('.subfolderSelection1').hide();}
+							else $('.subfolderSelection1').show();
+							resize();
+						}else{
+							isFile2 = false;
+							$('.subfolderSelection1').hide();
+							if(selected_subfolder2_id!=0){
+								$(".edit-subfolderconfig1-info").show();
+							}else{
+								selected_subfolder2_id = "0";
+								$(".edit-subfolderconfig1-info").hide();
+							}
+						} 
+						if(formAction=="update" && itemFlag1==false && selected_subfolder2_id!=0){
+							selected_subfolder2_id = "0";
+							console.log("sub folder not exist.");
+							$(".edit-subfolderconfig1-info").show();
+						}
+						console.log("selected_subfolder2_id : in edit ::: "+selected_subfolder2_id);
+						$("#subfolders1").val(selected_subfolder2_id);
+						$.each(sublevel2, function(id,obj){	
+							if(selected_subfolder2_id==obj.id && obj.type!="folder" && sublevel2.length!=0){
+								isFile2 = true;
+							}else isFile2 = false;
+							console.log("#### isFile2"+isFile2);
+						});
+						selected_subfolder2_id="0";
+						resize();
+				},
+				error: function(xmlHttpRequest,error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   } else{
+						$(".subfolderSelection1").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+				}
+			});
+	}
+	function generateIntegrationAppToken(app_code) {
+		$.ajax({url: get_app_token_url+"?userId="+user_id,
+			async:true,
+			type: "get",
+			success: function(result){
+				if(result.tokenResult.tokenId) {
+					validateSpecificAppToken(app_code);
+				} else {
+					getIntegrationAppTokenDetails(app_code); 
+				}
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function getAuthUser(){
+		if(ui_settings["integrationSpecificSettings"]["settings"] != undefined && ui_settings["integrationSpecificSettings"]["settings"] != null)
+		authenticated_user=ui_settings["integrationSpecificSettings"]["settings"]["userDetails"].login;
+	}
+	function loadBoxForm(){		
+		$("#form").trigger("reset");
+		$('#integrations-block').hide();
+		$("#integration-form").show();
+		$(".edit-roomconfig-info").hide();
+		$(".edit-itemconfig-info").hide();
+		$(".rooms-loading").hide();
+//		resize();
+		/*(ui_settings=="") {
+			$(".items-loading").show();
+			$.ajax({
+				url: configuration_settings_url+"?userId="+user_id,
+				async: true,
+				success: function(result){
+					$(".items-loading").hide();
+					ui_settings=result;	
+					loadConfigurationSettings();
+					loadRooms();
+				},
+				 error: function(xmlHttpRequest,error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   }else{
+						$('#integration-form').html("We've experienced some difficulty. Try again.");
+						$('#integration-form').hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+				}
+			});
+			//getAllSparkRooms();*/
+		
+	}
+	function loadConfigurationSettings() {
+		console.log("in form loading....");
+		if((ui_settings["sparkRoomSettings"] !=undefined) && (ui_settings["integrationSpecificSettings"]["settings"] != undefined) ){
+			
+			var itemFlag=false;
+			var roomFlag=false;
+			var folderMatchFlag = false;
+			var rooms = "";
+			console.log("In load configuration isWebhookConfig =  "+isWebhookConfig);
+			console.log("selected_source_id in loadConfig() "+selected_source_id);
+		
+			var authorizedto=ui_settings["integrationSpecificSettings"]["settings"]["userDetails"].login;
+			if(authorizedto!=""&&authorizedto!=undefined) {
+				$('#authenticted-to').html(authorizedto);
+				$(".authenticted-block").css("display","block");
+			}
+			itemslist = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"]["entries"];				
+			var foldercount = 0;
+			var filecount = 0;	
+			$("#folders").html(''); //
+			$("#files").html(''); //
+			
+			$.each(itemslist, function(id,obj){		
+				if(isWebhookConfig){
+					if(obj.type=="folder"){
+						console.log("selected_source_id..." + selected_source_id);
+						foldercount++;
+						$("#folders").append($('<option>').text(obj.name).attr('value',obj.id));
+						if(formAction=="update" && selected_source_id==obj.id && folderMatchFlag==false){
+							folderMatchFlag=true;
+						}
+					}else if(obj.type=="file"){
+						filecount++;
+						$("#files").append($('<option>').text(obj.name).attr('value',obj.id));
+					}
+				}else{
+					if(obj.type=="folder"){
+						console.log("selected_source_id..." + selected_source_id);
+						foldercount++;
+						$("#folders1").append($('<option>').text(obj.name).attr('value',obj.id));
+						if(formAction=="update" && selected_source_id==obj.id && folderMatchFlag==false){
+							folderMatchFlag=true;
+						}
+					}else if(obj.type=="file"){
+						filecount++;
+						$("#files1").append($('<option>').text(obj.name).attr('value',obj.id));
+					}
+				}
+				if(formAction=="update" && selected_source_id==obj.id && itemFlag==false){
+					selected_source_id=obj.id;
+					itemFlag=true;
+				}
+			});
+			if(formAction=="update" && isWebhookConfig == false ){
+				if(selected_source_id =="all" || selected_source_id == "rootfolders" || selected_source_id=="rootfiles"){
+					$(".subfolderSelection1").hide();
+					$(".subfolderSelection").hide();
+				} 
+			}
+			if(formAction=="update" && itemFlag==false ){
+				console.log("not matched..." + selected_source_id+"***** selected_source_id +selected_source_id");
+				if(selected_source_id!="all"&&selected_source_id!="rootfolders"&&selected_source_id!="rootfiles"){
+					selected_source_id = "0";
+					$(".edit-itemconfig-info").show();
+				}
+			}
+			if(isWebhookConfig){
+				if(foldercount ==0) $('#folders').hide();
+				if(filecount ==0) $('#files').hide();
+			}else{
+				if(foldercount ==0) $('#folders1').hide();
+				if(filecount ==0) $('#files1').hide();
+			}
+			$('#rooms')[0].options.length = 1;
+			rooms = ui_settings["sparkRoomSettings"].items;
+			if(allRooms.length !=0) {
+				rooms = allRooms;
+				$(".rooms-loading").hide();
+			}
+			//if(!isMobile)$("#rooms").customselect("destroy");				
+			$.each(rooms, function(id,obj){
+				$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+				if(formAction=="update" && selected_room_id==obj.id&&roomFlag==false){
+					selected_room_id=obj.id;
+					roomFlag=true;
+				}
+			});		
+			if(formAction=="update" && roomFlag==false){
+				selected_room_id = "0";
+				$(".edit-roomconfig-info").show();
+			}
+			console.log("***** In Edit-loadconfigurationForm source_level : "+source_level+" subsource_level : "+subsource_level);
+			if(formAction=="update"&&folderMatchFlag){
+				source_level = "folder";
+				$(".subfolderSelection1").hide();
+				$('#event-note').show();
+				getNestedFolderList(jsonString);
+			}else{
+				if(formAction=="update"&&folderMatchFlag==false){
+					source_level = "file";
+					if($('#create1').is('checked',true)) $('#create1').prop("checked",false);
+					$('#create1').prop("disabled",true);
+					if($('#update1').is('checked',true)) $('#update1').prop("checked",false);
+					$('#update1').prop("disabled",true);
+					$('#event-note').hide();
+				}
+			}
+			$("#rooms").val(selected_room_id);
+			if(isWebhookConfig)	$('#resources').val(selected_source_id);
+			else $('#resources1').val(selected_source_id);
+			$('#select2-rooms-container').html($("#rooms option:selected").text());
+			selected_room_id="0";
+			selected_source_id="0";
+			resize();
+			//if(!isMobile)$("#rooms").customselect();	
+		}else{
+			$("#integration-form").hide();
+			alert("We've experienced some difficulty. Try again.");
+		}
+	}
+	function validateConfiguration(instance, notifications){
+//		console.log("Instances in validateConfig "+JSON.stringify(instance)+" : "+notifications);
+		var configData = JSON.parse(instance.configJson);
+		var configEvents = configData.events;
+		var notificationsLength = notifications.length;
+		var matchCount = 0;
+		var subfolder_id ="";
+		var nested_subfolder_id = "";
+		configFlag = false;
+		eventsMatchFlag = true;
+		console.log("******* configFlag eventsMatchFlag "+configFlag +" "+eventsMatchFlag+" "+folderFlag);
+		console.log("**** subfolder value ****"+$("#subfolders").val());
+		if($("#subfolders").val()==0 && folderFlag && isWebhookConfig == false) subfolder_id= "all";
+		else if($("#subfolders").val()==0 && folderFlag) subfolder_id= "0";
+		else subfolder_id= $("#subfolders").val();
+		nested_subfolder_id = $("#subfolders1").val();
+		console.log("**** subfolder value subfolder_id ****"+subfolder_id);
+		if(isWebhookConfig){
+			if(instance.channelId==room_id&&configData.source_id==selectedSourceId&&configData.sub_source_id==subfolder_id && configData.nested_sub_source_id == nested_subfolder_id){
+				console.log("&&& instance.channelId==room_id&&configData.source_id==selectedSourceId&&configData.sub_source_id==subfolder_id ==> configFlag "+configFlag);
+				configFlag = true;
+			}
+		}else{ 
+			if(instance.channelId==room_id&&configData.source_id==selectedSourceId&&configData.sub_source_id==subfolder_id){
+				console.log("&&& instance.channelId==room_id&&configData.source_id==selectedSourceId&&configData.sub_source_id==subfolder_id ==> configFlag "+configFlag);
+				configFlag = true;
+			}
+		}
+		if($.isArray(notifications)){
+			if($.isArray(configEvents)){
+				for (var p in notifications) {
+					if(configEvents[p] != notifications[p]){
+						eventsMatchFlag = false;
+					}else {
+						matchCount = matchCount +1;
+					}
+					if(matchCount==configEvents.length&&notificationsLength==configEvents.length){
+						eventsMatchFlag = true;
+						console.log("After validateConfig method execution configFlag : eventsMatchFlag  "+configFlag+" : "+eventsMatchFlag)
+						return false;
+					}else{
+					console.log("After validateConfig method execution configFlag : eventsMatchFlag  "+configFlag+" : "+eventsMatchFlag)
+						eventsMatchFlag = false;
+					}
+				}
+			}else{
+				eventsMatchFlag = false;
+			}
+		}else{
+			if($.isArray(configEvents)){
+			    eventsMatchFlag = false;
+			}else{
+			  if(configEvents==notifications){
+				eventsMatchFlag = true;
+			  }else{
+				eventsMatchFlag = false;
+			  }
+			}
+		}
+	}
+	function selectedEventsValues(events){
+		if ($.isArray(events)) {
+			$.each(events, function(index, value) {
+				if((source_level=="folder"  &&  subsource_level == "file" && nested_subsource_level=="0")||(source_level=="file" &&  subsource_level ==  "0" && nested_subsource_level=="0") || (source_level=="folder" &&  subsource_level ==  "folder" && nested_subsource_level=="file")){
+					if(value=="delete1")Array.prototype.push.apply(selectedEvents, ["FILE.DELETED","FILE.TRASHED"])
+					if(value=="download1")selectedEvents.push("FILE.DOWNLOADED");
+					if(value=="copy1")selectedEvents.push("FILE.COPIED");
+					if(value=="move1")selectedEvents.push("FILE.MOVED");
+					if(value=="preview")selectedEvents.push("FILE.PREVIEWED");
+				}
+				if((source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="0")||( source_level=="folder" && subsource_level ==  "0" && nested_subsource_level=="0")||( source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="folder")){
+					if(value=="create1")Array.prototype.push.apply(selectedEvents, ["FOLDER.CREATED","FILE.UPLOADED"]);
+					if(value=="update1"){ console.log("^^^^ FILE UP ^^^ "+value); if( $.inArray("FILE.UPLOADED", selectedEvents) <= -1) selectedEvents.push("FILE.UPLOADED");}
+					if(value=="delete1")Array.prototype.push.apply(selectedEvents, ["FOLDER.DELETED","FOLDER.TRASHED","FILE.DELETED","FILE.TRASHED"]);
+					if(value=="download1")Array.prototype.push.apply(selectedEvents,["FOLDER.DOWNLOADED","FILE.DOWNLOADED"]);
+					if(value=="copy1")Array.prototype.push.apply(selectedEvents,["FOLDER.COPIED","FILE.COPIED"]);
+					if(value=="move1")Array.prototype.push.apply(selectedEvents,["FOLDER.MOVED","FILE.MOVED"]);
+					if(value=="preview")selectedEvents.push("FILE.PREVIEWED");
+				}
+				if(value=="share1")Array.prototype.push.apply(selectedEvents,["SHARED_LINK.CREATED","SHARED_LINK.UPDATED","SHARED_LINK.DELETED"]);
+				if(value=="comment1")Array.prototype.push.apply(selectedEvents,["COMMENT.CREATED","COMMENT.UPDATED","COMMENT.DELETED"]);
+				if(value=="taskAdded1")selectedEvents.push("TASK_ASSIGNMENT.CREATED");
+				if(value=="taskCompleted1")selectedEvents.push("TASK_ASSIGNMENT.UPDATED");
+			});
+		}else{
+			console.log("*** Single Events ****");
+			if((source_level=="folder"  &&  subsource_level == "file" && nested_subsource_level=="0")||(source_level=="file" &&  subsource_level ==  "0" && nested_subsource_level=="0") || (source_level=="folder" &&  subsource_level ==  "folder" && nested_subsource_level=="file")){
+				if(events=="delete1")Array.prototype.push.apply(selectedEvents, ["FILE.DELETED","FILE.TRASHED"])
+				if(events=="download1")selectedEvents.push("FILE.DOWNLOADED");
+				if(events=="copy1")selectedEvents.push("FILE.COPIED");
+				if(events=="move1")selectedEvents.push("FILE.MOVED");
+				if(events=="preview")selectedEvents.push("FILE.PREVIEWED");
+			}
+			if((source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="0")||( source_level=="folder" && subsource_level ==  "0" && nested_subsource_level=="0")||( source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="folder")){
+				if(events=="create1")Array.prototype.push.apply(selectedEvents, ["FOLDER.CREATED","FILE.UPLOADED"]);
+				if(events=="update1"){ if( $.inArray("FILE.UPLOADED", selectedEvents) <= -1) selectedEvents.push("FILE.UPLOADED");}
+				if(events=="delete1")Array.prototype.push.apply(selectedEvents, ["FOLDER.DELETED","FOLDER.TRASHED","FILE.DELETED","FILE.TRASHED"]);
+				if(events=="download1")Array.prototype.push.apply(selectedEvents,["FOLDER.DOWNLOADED","FILE.DOWNLOADED"]);
+				if(events=="copy1")Array.prototype.push.apply(selectedEvents,["FOLDER.COPIED","FILE.COPIED"]);
+				if(events=="move1")Array.prototype.push.apply(selectedEvents,["FOLDER.MOVED","FILE.MOVED"]);
+				if(events=="preview")selectedEvents.push("FILE.PREVIEWED");
+			}
+			if(events=="share1")Array.prototype.push.apply(selectedEvents,["SHARED_LINK.CREATED","SHARED_LINK.UPDATED","SHARED_LINK.DELETED"]);
+			if(events=="comment1")Array.prototype.push.apply(selectedEvents,["COMMENT.CREATED","COMMENT.UPDATED","COMMENT.DELETED"]);
+			if(events=="taskAdded1") selectedEvents.push("TASK_ASSIGNMENT.CREATED");
+			if(events=="taskCompleted1")selectedEvents.push("TASK_ASSIGNMENT.UPDATED");
+		}
+	}
+	function saveBoxInstance(){
+		var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		if(isWebhookConfig)	selectedSourceId=$("#resources option:selected").val();
+		else selectedSourceId= $("#resources1 option:selected").val();
+		selectedSubsourceId = $('#subfolders').val();
+		selectedNestedSubSourceId = $('#subfolders1').val();
+		console.log("selectedSourceId:selectedSubsourceId:selectedNestedSubSourceId ::  "+selectedSourceId+" "+selectedSubsourceId+" "+selectedNestedSubSourceId);
+		console.log("source_level: "+ source_level+" subsource_level: "+subsource_level);
+		console.log("selectedPoolingSourceId "+selectedSourceId);
+		var jsonData = {};
+		room_id =$("#rooms option:selected").val();
+		jsonData["channelId"] = room_id;									
+		jsonData["integrationId"] = integration_id;
+		jsonData["status"] = "ACTIVE";
+		jsonData["userId"] =user_id;
+		var action_url;
+		var actionType;
+		postAddMessageToRoom(room_id,appName);
+		console.log("isUpdateInstance :::: "+isUpdateInstance);
+		/* if(isUpdateInstance){
+		console.log("^^^^ isWebhookConfig is true and in Edit");
+			if(formAction=="update") {
+				jsonData["instance_id"] = instanceId;
+				jsonData["instanceUuid"] = instance_uuid;
+				if(room_id!=room_id_old) {
+					room_modified=true;
+					jsonData["messageToSpark"] = updateMessageToSpark;
+				} else {
+					room_modified=false;
+				}
+				//## repo_modified 
+				if(isWebhookConfig){
+					if(($('#subfolder1').val() != 0 && (nested_subsource_level=="file" || nested_subsource_level=="folder")) ||(nested_subsource_id_old != selectedNestedSubSourceId  && formAction=="update")){
+						if(nested_subsource_id_old!=selectedNestedSubSourceId) source_modified=true;
+						else source_modified=false;	
+					}else if((nested_subsource_level ==0 && (subsource_level == "file" || subsource_level == "folder")) || (subsource_id_old !=selectedSubsourceId && formAction=="update")){
+						if(selectedSubsourceId!=subsource_id_old) source_modified=true;
+						else source_modified=false;
+					}else{
+					console.log("**** source_id_old "+source_id_old+" selectedSourceId "+selectedSourceId);
+						if(source_id_old!=selectedSourceId) source_modified=true;
+						else source_modified=false;
+					}
+				}else{
+					if($('#subfolder').val() != 0 && (subsource_level=="file" || subsource_level=="folder") ){
+						if(selectedSubsourceId!=subsource_id_old) source_modified=true;
+						else source_modified=false;	
+					}else{
+						if($('#resources1').val() != 0 && source_id_old!=selectedSourceId) source_modified=true;
+						else source_modified=false;
+					}
+				}
+				jsonData["room_modified"] = room_modified;	
+				console.log("IS repo_modified? "+source_modified);
+				jsonData["repo_modified"] = source_modified;				
+				jsonData["configJson"]=JSON.parse(instanceData.configJson);
+				action_url=update_configuration_settings_url+instanceId;
+				actionType="PUT";
+				$('.loading-first-block').html('Please wait while your Integration is being updated');
+			} else {
+				jsonData["configJson"]={};
+				jsonData["messageToSpark"] = postMessageToSpark;
+				action_url=save_configuration_settings_url;
+				actionType="POST";
+				$('.loading-first-block').html('Please wait while your Integration is being set up');
+			}
+		// }else {
+			jsonData["configJson"]={};
+			jsonData["messageToSpark"] = postMessageToSpark;
+			action_url=save_configuration_settings_url;
+			actionType="POST";
+			$('.loading-first-block').html('Please wait while your Integration is being set up');
+		} */
+		//------------------
+		console.log("isUpdateInstance "+isUpdateInstance);
+		if(isUpdateInstance){
+			if(formAction=="update") {
+				jsonData["instance_id"] = instanceId;
+				jsonData["instanceUuid"] = instance_uuid;
+				if(room_id!=room_id_old) {
+					room_modified=true;
+					jsonData["messageToSpark"] = updateMessageToSpark;
+				} else {
+					room_modified=false;
+				}
+				if(isWebhookConfig){
+					if(($('#subfolder1').val() != 0 && (nested_subsource_level=="file" || nested_subsource_level=="folder")) ||(nested_subsource_id_old != selectedNestedSubSourceId  && formAction=="update")){
+						if(nested_subsource_id_old!=selectedNestedSubSourceId) source_modified=true;
+						else source_modified=false;	
+					}else if((nested_subsource_level ==0 && (subsource_level == "file" || subsource_level == "folder")) || (subsource_id_old !=selectedSubsourceId && formAction=="update")){
+						if(selectedSubsourceId!=subsource_id_old) source_modified=true;
+						else source_modified=false;
+					}else{
+						if(source_id_old!=selectedSourceId) source_modified=true;
+						else source_modified=false;
+					}
+				}else{
+					if($('#subfolder').val() != 0 && (subsource_level=="file" || subsource_level=="folder") ){
+						if(selectedSubsourceId!=subsource_id_old) source_modified=true;
+						else source_modified=false;	
+					}else{
+						if($('#resources1').val() != 0 && source_id_old!=selectedSourceId) source_modified=true;
+						else source_modified=false;
+					}
+				}
+				jsonData["room_modified"] = room_modified;	
+				jsonData["repo_modified"] = source_modified;				
+				jsonData["configJson"]=JSON.parse(instanceData.configJson);
+				action_url=update_configuration_settings_url+instanceId;
+				actionType="PUT";
+				$('.loading-first-block').html('Please wait while your Integration is being updated');
+			} 
+		}else {
+		
+			jsonData["configJson"]={};
+			jsonData["messageToSpark"] = postMessageToSpark;
+			action_url=save_configuration_settings_url;
+			actionType="POST";
+			$('.loading-first-block').html('Please wait while your Integration is being set up');
+		}
+		
+		
+		//-------------------
+		
+		console.log("configJson['source_id'] "+selectedSourceId );
+		jsonData["configJson"]["source_id"]= selectedSourceId;
+		var itemslist = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"];	
+		$.each(itemslist["entries"], function(id,obj){	
+			if(obj.type=="folder"){
+				if(selectedSourceId==obj.id && folderFlag==false){
+					folderFlag=true;
+				}
+			}
+		});
+		// ## selctedSourceId 
+		if(isWebhookConfig){
+		console.log("+++++++++ It added for new instances only ++++++")
+			if(nested_subsource_level!= 0 && $('#subfolders1').val()!=0){
+				//selectedSource_id = $('#subfolders1').val();
+				jsonData["configJson"]["selectedSourceId"]= $('#subfolders1').val();
+				if(nested_subsource_level == "folder") jsonData["configJson"]["source_type"]="folder";
+				if(nested_subsource_level == "file") jsonData["configJson"]["source_type"]="file";
+			}else if(nested_subsource_level==0 && subsource_level!= 0 && $('#subfolders').val()!=0 ){
+				//selectedSource_id = $('#subfolders').val();
+				jsonData["configJson"]["selectedSourceId"]= $('#subfolders').val();
+				if(subsource_level == "folder") jsonData["configJson"]["source_type"]="folder";
+				if(subsource_level == "file") jsonData["configJson"]["source_type"]="file";
+			}else{
+				//selectedSource_id = $('#resources').val();
+				jsonData["configJson"]["selectedSourceId"]= $('#resources').val();
+				if(source_level == "folder") jsonData["configJson"]["source_type"]="folder";
+				if(source_level == "file") jsonData["configJson"]["source_type"]="file";
+			}
+		}
+		console.log("source_level :: subsource_level :: nested_subsource_level "+source_level+" "+subsource_level+" "+nested_subsource_level);
+		
+		//## subsource
+		if($("#subfolders").val()==0 && folderFlag && isWebhookConfig){
+			 jsonData["configJson"]["sub_source_id"]= "0";
+		}else if($("#subfolders").val()==0 && folderFlag && isWebhookConfig==false &&( $("#resources1").val() != "all" || $("#resources1").val() != "rootfolders" || $("#resources1").val() != "rootfiles"   )){
+			jsonData["configJson"]["sub_source_id"]= "all";
+		}else {
+			jsonData["configJson"]["sub_source_id"]= $("#subfolders").val();
+		}
+		if($("#subfolders").val() != 0 && $("#subfolders1").val()!=0) jsonData["configJson"]["nested_sub_source_id"] = $("#subfolders1").val();
+		else jsonData["configJson"]["nested_sub_source_id"] = "0";
+		if(isWebhookConfig) selectedEventsValues(res.events1);
+		console.log("selectedEvents array ****"+selectedEvents);
+		if(isWebhookConfig == false){ 
+		console.log(" old instance______-------"+isWebhookConfig);
+			$('.success-integration-note-block').html('<b>Note:</b> You may see a delay of up to 2 minutes to receive notifications into your Cisco Spark spaces after its triggered.');
+			jsonData["configJson"]["events"]=res.events;
+			var notifications = res.events;
+			var notificationslength = objLength(res.events);
+			jsonData["messageFormat"]="Box Bot :Hello...User";
+		}else{
+		console.log("new config______-------"+isWebhookConfig);
+			$('.success-integration-note-block').html('');
+			jsonData["configJson"]["events"]=res.events1;	
+			jsonData["configJson"]["selectedEvents"]= selectedEvents;
+			jsonData["messageFormat"]="Box Webhook";			
+			var notifications = res.events1;
+			var notificationslength = objLength(res.events1);
+		}
+		console.log("selected Events: "+notifications);
+		jsonData["configJson"]["displayName"]= res.displayName;
+		var jsonString = JSON.stringify(jsonData);
+		if(listResultData.length != 0 && notificationslength !=0){
+		 console.log("listResultData not null "+listResultData.length);
+			$.each(listResultData, function(i, instance) {
+				console.log("instance.instanceId "+instance.instanceId+" instanceId :"+instanceId);
+				if(formAction=="update" && instance.instanceId!=instanceId){
+				 validateConfiguration(instance, notifications);
+				 if(eventsMatchFlag==true&&configFlag==true){
+						return false;
+					}
+				}
+				
+				if(formAction!="update"){
+				 validateConfiguration(instance, notifications);
+				  if(eventsMatchFlag==true && configFlag==true){
+						return false;
+					}
+				console.log("after returning form : eventsMatchFlag : configFlag "+configFlag+" "+eventsMatchFlag)
+				}
+			});
+		}
+		if($('#rooms').val()==0 || $('#rooms').val()==null){ 
+		    alert("Please select Space");
+		}else if(notificationslength==0){
+			alert("Please select atleast one event");
+		}else if(($('#resources').val() == 0 && isWebhookConfig) || ($('#resources1').val() == 0 && isWebhookConfig==false)){ 
+		    alert("Please select Folders/Files");
+		}else if(listResultData.length != 0 && eventsMatchFlag==true && configFlag==true){
+			alert("Please Select different configuration.");
+		}else {
+			if(true){ //isWebhookConfig
+				/*var listData = "";
+				console.log("listResultData :: "+JSON.stringify(listResultData));
+				if(listResultData.length != 0){
+					$.each(listResultData, function(i, value) {
+						listData = JSON.parse(value.configJson);
+						console.log("listData[selectedSourceId] "+listData["selectedSourceId"]);
+						if(selectedSource_id == listData["selectedSourceId"]){ 
+							console.log("selectedSource_id "+selectedSource_id+" listData.selectedSourceId "+listData.selectedSourceId);
+							sourceFound = true;
+							return false;
+						}else sourceFound = false;
+					});
+				}
+				if(sourceFound && formAction=="add"  ){ 
+					//alert("Please select a different file/folder as you already have another configuration created for the selected one. Given the limitation on Box, we cannot enable instant notifications from one file/folder to multiple Spark spaces.");
+					$('#webhook-warning-modal').foundation('open');
+				}else if(source_modified && sourceFound ){
+					//console.log("source_modified "+source_modified);
+					//console.log("listData.selectedSourceId "+listData.selectedSourceId+" selectedSource_id "+selectedSource_id);
+					//alert("Please select a different file/folder as you already have another configuration created for the selected one. Given the limitation on Box, we cannot enable instant notifications from one file/folder to multiple Spark spaces.");
+					$('#webhook-warning-modal').foundation('open');
+				}else { */
+					$('.loading-second-block').html('Selected Space is '+ selectedRoomName);
+					$('#loading-block').foundation('open');
+					$.ajax({url: action_url+"?userId="+user_id,
+						async:true,
+						type: actionType,
+						data: jsonString,
+						contentType: "application/json",
+						dataType: "json",
+						success: function(result){
+							if(formAction=="update" && result["UpdateIntegrationResponse"]!= undefined && result["UpdateIntegrationResponse"]["statusCode"] == 500){
+								$('#webhook-warning-modal').foundation('open');
+							}else if(result["startResponse"] != undefined && result["startResponse"]["statusCode"] != undefined && result["startResponse"]["statusCode"] == 500){
+								$('#webhook-warning-modal').foundation('open');
+							}else{ 
+								$('#loading-block').foundation('close');
+								$('#success-integration').foundation('open');
+							}
+						},
+						error: function(xmlHttpRequest, error) {
+						   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+							   return;
+						   } else{
+								$('#loading-block').foundation('close');
+								alert("We've experienced some difficulty. Try again.");
+							}
+						}
+					});
+					$('.loading-first-block').html('Please wait just a moment while your app is loading');
+					$('.loading-second-block').html('');
+				//}
+			}else{
+				$('.loading-second-block').html('Selected Space is '+ selectedRoomName);
+				$('#loading-block').foundation('open');
+				console.log("webhook previously not added ");
+				$.ajax({url: action_url+"?userId="+user_id,
+					async:true,
+					type: actionType,
+					data: jsonString,
+					contentType: "application/json",
+					dataType: "json",
+					success: function(result){
+						console.log('result["startResponse"] '+typeof result["startResponse"]);
+							$('#loading-block').foundation('close');
+							$('#success-integration').foundation('open');
+					},
+					error: function(xmlHttpRequest, error) {
+					   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+						   return;
+					   } else{
+							$('#loading-block').foundation('close');
+							alert("We've experienced some difficulty. Try again.");
+						}
+					}
+				});
+				$('.loading-first-block').html('Please wait just a moment while your app is loading');
+				$('.loading-second-block').html('');
+			}
+		}
+	}
+	
+	
+	
+	function addOrUpdateInstance() {
+	authenticate = "success";
+	$("#submit-button").text("Add Integration");
+	var res = $('form').serializeObject();
+	selectedRoomName=$("#rooms option:selected").text();
+	displayName = $('#displayName').val();
+	res = JSON.stringify($('form').serializeObject());
+	console.log(res);
+	var checkRes = false;
+	if($('#private_message').is(':checked') || $('#rooms').val()!=0 ){
+		checkRes = true;
+	}
+	if(!checkRes){
+		alert("Please select Space/Private Message(only to me)");
+	}else{
+		$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+		$('#loading-block').foundation('open');
+		$.ajax({
+			url: post_form_data_url,
+			async: false,
+			
+			success: function(result){				
+				$('#success-integration').foundation('open');
+				$('#done-button').click(function() {
+					$('#success-integration').foundation('close');
+					$("#integration-form").hide();
+//---------------------------------------------------------------------------------------------------------------
+$("#integration-form").hide();
+			var listDataHTML="";			
+			$.ajax({
+				url: list_instances_url,
+				async: false,
+				success: function(result){		
+					$("#instance-list-block").show();
+					console.log("in success before if");
+					console.log("localStorage.getItem('zendeskFormData') " + localStorage.getItem("zendeskFormData"));
+					
+						 console.log("in success else");
+							listDataHTML+='<div class="large-12 medium-12 columns instance-background"><br>';
+							listDataHTML+='<div class="large-8 medium-8 columns integration-details">';
+							listDataHTML+='<img src="'+integration_app_icon_url+'" alt="">';
+							listDataHTML+='<label>'+displayName+'</label>';
+							listDataHTML+='<label>'+selectedRoomName+'</label>';
+							listDataHTML+='<label class="date">Added: 27th Jul 2016</label>';
+							listDataHTML+='</div>';
+							listDataHTML+='<div class="large-2 medium-2 columns edit-remove-icons">';
+							listDataHTML+='<span class="cross-mark remove-config" data-open="remove-integration-popup" id="123456"></span>';
+							listDataHTML+='<a class="edit-config" id="56789">Edit</a>';
+							listDataHTML+='</div>';
+							listDataHTML+='</div><hr class="instance-hr">';	
+							$("#instance-list-block").html(listDataHTML);
+				  
+				}
+			});		
+//-------------------------------------------------------------------------------------------------------------------
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					$("#integrations-block").show();
+				});
+			},
+			error: function (error) {
+				alert('error while saving data' + error);
+			}
+		});
+	}
+}
+</script>
+</head>
+<body data-whatinput="mouse">	
+	<div class="integration-app" id="box">
+		<div class="rows large-12 medium-12 columns warning-msg" style="display:none;"></div>
+		<div class="rows large-12 medium-12 columns client-app-warning" style="display:none;"></div>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading"><img class="spark-icon" src="" alt="....."></div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment while your app is loading</div>
+				<div class="loading-second-block">name and space name</div>
+				<div class="loading-bar"><div class="loading-background"></div>	</div>
+			</div>
+		</div>
+		<div id="list-loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading"><img class="spark-icon" src="" alt="....."></div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait...</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-bar"><div class="loading-background"></div>	</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal success-integration" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-loading">
+				<img class="spark-icon" src="" alt=".....">
+			</div>
+			<div class="well-done-text">Well done!</div>
+			<div class="success-integration-first-block">Your configuration has been set up and is ready to use.</div>
+			<div class="success-integration-note-block"><b>Note:</b> You may see a delay of up to 2 minutes to receive notifications into your Cisco Spark spaces after its triggered.</div>
+			<div class="large-5 medium-5 columns buttons-block">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Space</button>-->
+					<button class="secondary button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns desktop-block">
+				<div class="row ">
+					<div class="large-2 medium-2 columns"><img alt="icon" id="box-icon" src=""></div>
+					<div class="large-6 medium-6 columns" style="float:left;">
+						<span id="displayName-label">Box</span><br>
+						<span id="addedon-label"></span>
+					</div>
+				</div><br>
+				<div class="msg-labels">
+					<label id="remove-msg"></label> 
+					<label id="remove-auth"></label>
+				</div>
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button remove-integration-btn" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+			<div class="large-12 columns mobile-block">	
+				<div class="msg-labels">
+					<label id="remove-msg-mobile"></label> 
+					<label id="remove-auth-mobile"></label> 
+				</div>				
+				<div class="option-buttons remove-integration-buttons">
+					<label class="remove-popup-cancel"> 
+						<a href="#" id="cancel-remove-integration">cancel</a>
+					</label>
+					<label class="remove-popup-remove">
+						<a href="#" id="remove-integration-btn" class="remove-integration-btn">remove</a>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div id="same-configuration" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="same-config-text">It's seems already webhook created for your selected folder/file. Click <b>Edit</b> to change your folder/file selection. Click <b>Cancel</b> to previous page</div>
+			<div class="large-5 medium-5 columns buttons-block">
+				<button class="secondary button same-config-yes">Edit</button>
+				<button class="secondary button same-config-no">Cancel</button>
+			</div>
+		</div>
+		<div id="webhook-warning-modal" class="reveal"  data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div><p><!-- <span class="info-bulb-icon">&nbsp</span>-->Please select a different file/folder as you already have another configuration created for the selected one. Given the limitation on Box, we cannot enable instant notifications from one file/folder to multiple Spark spaces.</p></div>
+			<div class="large-2 medium-2 columns button-control" >
+				<button class="secondary button close-modal">Close</button>
+			</div>  
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="instance-loading-block" class="row instance-loading-block" style="display: none;">
+				<div class="instances-loading">&nbsp;</div>
+				<div class="instances-loading-text">Loading your configurations</div>
+			</div>
+			<div id="home" class="home">
+				<div class="row add-config-block">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns config-name"><label class="label-config">Box configurations</label></div>
+						<div class="large-6 medium-6 columns">
+							<button class="remove-all-btn" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+							<button class="secondary button" id="add-config">Add</button>
+						</div>					
+					</div>
+				</div>
+				<div id="instance-list-block" class="row instance-list-block"></div>
+			</div>
+		</div>
+		<div id="integration-form" class="large-12 columns" >
+			<div class="large-12 medium-12 columns edit-itemconfig-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured folder/file does not exist.</span></p>
+			</div>
+			<div class="large-12 medium-12 columns edit-subfolderconfig-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured subfolder/file does not exist.</span></p>
+			</div>
+			<div class="large-12 medium-12 columns edit-subfolderconfig1-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured nested subfolder/file does not exist.</span></p>
+			</div>
+			<div class="large-12 medium-12 columns edit-roomconfig-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured space does not exist.</span></p>
+			</div>
+			<div class="authenticted-block">Authenticated to Box as: <span id="authenticted-to"></span></div>
+			<div class="no-configuration-block" style="display:none">There are No Folders/Files in your Box Account. Please Add folders/files in your account and configure for Notifications</div>
+			<form name="form" id="form" method="post">
+				<div class="row app-config-block">
+					<div class="large-10 medium-10 columns first sub-config-block">
+						<label class="heading-01">Cisco Spark configuration</label>
+						<div class="large-8 medium-8 columns checkbox" style='margin-bottom:20px;'>
+							<input type="checkbox" id="private_message" name="private_message" value="private_message"/>
+							<label for="private_message">Private Space(Only me)</label>
+						</div>
+						<div class="large-8 columns" style='float:left'>
+							<div class="large-3 medium-3 columns items-config">
+								<label>Space</label>
+							</div>
+							<div class="large-5 medium-6 columns dropdown-config text left">
+								<select name="room" id="rooms" class="custom-select">
+								<option value='0'>Please Select</option>
+								<option value='faryhyjuyftyu5usebhfd1'>Room1</option>
+								<option value='faryhyjuyftyu5usebhfd2'>Room2</option>
+								<option value='faryhyjuyftyu5usebhfd3'>Room3</option>
+								<option value='faryhyjuyftyu5usebhfd4'>Room4</option></select>
+								<span class="has-tip tip-right" id="tooltip" title="Space in which you'd like to receive notifications. Ensure newly created spaces have at least one message in it for it to show up here." data-tooltip><img class="tool-tip"></span>
+							</div>
+							<div class="rooms-loading" style="display: none;"></div>
+						</div>
+						<div class="large-4 columns">
+							<button class="button secondary text addbot" style='float:left'>Add Bot</button>
+						</div>
+					</div>
+					<div class="large-10 medium-10 columns first sub-config-block" style='float:left'>
+						<div class="large-8 columns">
+							<div class="large-3 medium-3 columns items-config">
+								<label>Configuration name (optional)</label>
+							</div>
+							<div class="large-5 medium-6 columns dropdown-config text left">
+								<input type="text" name="displayName" id="displayName" class="integration-name"	value="" autocomplete='off'>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row app-config-block configbox">
+					<div class="large-10 medium-10 columns first sub-config-block">
+						<label class="heading-01">Box configuration</label>
+						<div id="webhook-config" class="large-8 columns"  style='float:left'>
+							<div class="large-3 medium-3 columns items-config">
+								<label class="label-config">Folders / Files</label>
+							</div>
+							<div class="large-5 medium-6 columns dropdown-config text left" style="display:block">
+								<select id="resources" name="resource" class="select2-selection__rendered">
+									<option value='0' hidden>Select Folders / Files</option>									
+									<optgroup id="folders" label="Root Folders"></optgroup >
+									<optgroup id="files" label="Root Files"></optgroup >																	 
+								</select>
+								</div>	
+								<span class="has-tip tip-right" id="tooltip" title="Select Folders and Files for which you'd like to receive notifications. Selecting All Folders will also send notifications about all the nested folders and files. Individual folder or file selection enabled only for root level folders and files" data-tooltip><img class="tool-tip"></span>
+								<div class="items-loading" style="display: none;">
+							</div>
+						</div>
+						
+					</div>
+					
+					<div class="large-12 columns events-config">
+						<div class="large-12 medium-12 columns events">
+							<label>Notifications</label>
+							<div id="events" class="events-sub">
+								<label id="event-note">Note: If a folder is chosen, all notifications selected below will be applied to all files and subfolders within the selected folder.</label>
+								<div id="webhook-events" style="display:block">
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="create1" name="events1" value="create1"/><label for="create1">Create/Upload</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="update1" name="events1" value="update1"/><label for="update1">File content update</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="box-copy1" name="events1" value="copy1"/><label for="box-copy1">Copy</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="move1" name="events1" value="move1"/><label for="move1">Move</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="share1" name="events1" value="share1"/><label for="share1">Share</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="comment1" name="events1" value="comment1"/><label for="comment1">Comment</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="download1" name="events1" value="download1"/><label for="download1">Download</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="delete1" name="events1" value="delete1"/><label for="delete1">Delete</label></div>
+									</div>									
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="taskAdded1" name="events1" value="taskAdded1"/><label for="taskAdded1">Add Task</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="taskCompleted1" name="events1" value="taskCompleted1"/><label for="taskCompleted1">Complete Task</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="preview" name="events1" value="preview"/><label for="preview">Preview</label></div>
+									</div>
+								</div>
+								<div id="pooling-events" style="display:none">
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="create" name="events" value="create"/><label for="create">Create/Upload</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="delete" name="events" value="delete"/><label for="delete">Delete</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="rename" name="events" value="rename"/><label for="rename">Rename</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="box-copy" name="events" value="copy"/><label for="box-copy">Copy</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="share" name="events" value="share"/><label for="share">Share</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="comment" name="events" value="comment"/><label for="comment">Comment</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="download" name="events" value="download"/><label for="download">Download</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="move" name="events" value="move"/><label for="move">Move</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="taskAdded" name="events" value="taskAdded"/><label for="taskAdded">Add Task</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="taskCompleted" name="events" value="taskCompleted"/><label for="taskCompleted">Complete Task</label></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>							 
+				
+				<div class="row integration-config-block">
+					<div class="large-5 medium-5 columns"> &nbsp;</div>
+					<div class="large-4 medium-4 columns left">
+						<button id="cancel-button" class="button">Cancel</button>
+						<button id="submit-button" class="button secondary text">Add Integration</button>
+					</div>
+				</div>
+			</form>
+		</div>		
+	</div>
+</body>
+</html>

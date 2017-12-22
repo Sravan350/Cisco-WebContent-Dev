@@ -1,0 +1,27 @@
+public class SparkWebhook {
+public static String jsonContent(List<Object> triggerNew, List<Object> triggerOld, String url) {
+String newObjects = '[]';
+if (triggerNew != null) {
+newObjects = JSON.serialize(triggerNew);
+}
+String oldObjects = '[]';
+if (triggerOld != null) {
+oldObjects = JSON.serialize(triggerOld);
+}
+String userId = JSON.serialize(UserInfo.getUserId());
+String baseURL = JSON.serialize(url);
+String userName = JSON.serialize(UserInfo.getName());
+String content = '{"new": ' + newObjects + ', "old": ' + oldObjects + ', "baseURL":' + baseURL + ', "userName":'+userName+'}';
+return content;
+}
+@future(callout=true)
+public static void callout(String url, String content) {
+Http h = new Http();
+HttpRequest req = new HttpRequest();
+req.setEndpoint(url);
+req.setMethod('POST');
+req.setHeader('Content-Type', 'application/json');
+req.setBody(content);
+h.send(req);
+}
+}

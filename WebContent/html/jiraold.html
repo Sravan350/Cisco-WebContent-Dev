@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>JIRA Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles1.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/jquery-customselect.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/jquery-customselect.css" rel="stylesheet" type="text/css">
+
+
+<!--<script src="https://183.82.99.100:8443/CiscoWebcontent/js/bootstrap.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/bootstrap-multiselect.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/bootstrap-multiselect.css" rel="stylesheet" type="text/css">-->
+<style type="text/css">
+ .multiselect {
+        width: 200px;
+    }
+    .selectBox {
+        position: relative;
+    }
+    .selectBox select {
+        width: 100%;
+        font-weight: bold;
+    }
+    .overSelect {
+        position: absolute;
+        left: 0; right: 0; top: 0; bottom: 0;
+    }
+    #checkboxes {
+        display: none;
+        border: 1px #dadada solid;
+    }
+    #checkboxes label {
+        display: block;
+    }
+    #checkboxes label:hover {
+        background-color: #1e90ff;
+    }
+</style>
+<script type="text/javascript">
+    oauthRequired=false;
+var formData ={"Rooms":[{"id":"room1","title":"Room1"},{"id":"room2","title":"Room2"},{"id":"room3","title":"Room3"}],
+"IssuesStatus":[{"id":"done","title":"DONE"},{"id":"inprogress","title":"IN PROGRESS"},{"id":"todo","title":"TO DO"}]};
+var	icon_url="https://183.82.99.100:8443/CiscoWebcontent/images/jira.png";
+var	instance_uuid="";
+	var selectedRoomName="";//static
+	var formAction="";//static
+	var description="";//static
+	iconName="jira.png";//static
+	var integration_token="";//static
+	var selected_room_id="0";//static
+	var selected_issue_status="0";//static
+	$( document ).ready(function() {		
+		/*save_spark_token_url="/api/clients/tokens";
+		configuration_settings_url="/api/integrations/"+integration_id+"/uiSettings";
+		save_configuration_settings_url="/api/integrations/instances";
+		update_configuration_settings_url="/api/integrations/instances/";
+		delete_instance_url="/api/integrations/instances/";
+		disconnect_integration_url="/api/integrations/instances";
+		list_integration_instances_url="/api/integrations/instances";		
+		removeall_integration_instances_url="bitbucket/removeallinstances";	*/	
+		
+		save_spark_token_url="test.html";//static
+		configuration_settings_url="test.html";//static
+		save_configuration_settings_url="test.html";//static
+		update_configuration_settings_url="test.html";//static
+		delete_instance_url="test.html";//static
+		disconnect_integration_url="test.html";//static
+		list_integration_instances_url="test.html";	//static	
+		removeall_integration_instances_url="test.html";//static	
+	    $('#integration-form').hide();//static
+		$(document).foundation();//static
+		
+		/* action=action.toLowerCase();
+		if(action=="connect") {
+			$("#integrations-block").show();
+			$("#integration-form").hide();
+			saveSparkToken();
+			loadJiraForm();
+		} else if(action=="disconnect") {
+			formAction="disconnect";
+			removeAllIntegrationInstances(formAction);		
+		} else {
+			console.log("list");
+			listIntegrations();
+		}	*/
+
+        $("#jira #rooms").on('change',function(){
+			room_modified=true;
+			console.log("room_modified....");
+		});	
+			
+		$("#jira #submit-button").click(function (e){
+			e.preventDefault();
+			savePagerdutyInstance();
+		});
+		$("#jira #cancel-button").click(function (e){
+			e.preventDefault();			
+			$('#integration-form').hide();
+			$('#integrations-block').show();
+			//resize();
+		});
+		$('#jira #add-config').click(function(e){
+			e.preventDefault();	
+			//formAction="add";
+			$("#submit-button").text("Add Integration");
+			loadJiraForm();	
+		});
+		$("#issuestatus").val('');
+		$('#issuestatus').on('change', function() {
+			var	text =  $("#issuestatus option:selected").text();
+			console.log("text..." + text);
+		});
+		$(document).on("click", "#jira #instance-list-block .edit-config" , function() {
+			console.log("edit instance");
+			//formAction="update";
+			$("#submit-button").text("Save");
+			/*instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+				}
+			});
+			console.log("instanceData...."+JSON.stringify(instanceData));
+			selected_room_id=instanceData.channelId;
+			room_id_old = instanceData.channelId;
+			console.log("room_id_old = " + instanceData.channelId);*/
+			loadJiraForm();
+			$('#integation-form').show();
+			$('#integrations-block').hide();
+			/*console.log("instanceData........."+instanceData);
+			console.log("instanceData.webhookUrl........."+instanceData.webhookUrl);*/
+			/*var config = JSON.parse(instanceData.configJson);
+			$("#rooms").val(instanceData.channelId);
+			$('#description').val(config.description);
+			$('#webhookURL').val(instanceData.webhookUrl);
+			$('#instanceid').val(instanceId);
+			var issues = config.issues;*/
+			var formData = localStorage.getItem("formdata");
+			console.log("formData..."+formData)
+			var json = JSON.parse(formData);
+			selected_room_id=json.room;
+			selected_issue_status=json.issuestatus;
+			$('#rooms').val(selected_room_id);
+			$('#issuestatus').val(selected_issue_status);
+			$('#displayName').val(json.displayName);
+			var issues = json.issues;
+			var issuestatus = json.issuestatus;
+			console.log("issuestatus....." + issuestatus);
+			var str = JSON.stringify(issuestatus);
+var dataarray = str.split(","); 
+console.log("dataarray..."+dataarray);
+			console.log("dataarray..."+dataarray);
+			//$("#issuestatus").val(dataarray);
+			//$("#issuestatus").multiselect("refresh");
+			
+			var i = 0;
+			var size = dataarray.length;
+for(i; i < size; i++){
+  $("#issuestatus").multiselect(".ms-options").find(":checkbox[value='"+dataarray[i]+"']").attr("checked","checked");
+  $("#issuestatus option[value='" + dataarray[i] + "']").attr("selected", 1);
+  $("#issuestatus").multiselect("refresh");
+}
+			
+			
+			if ($.isArray(issues)) {
+				$.each(issues, function(index, value) {
+					$("input[type=checkbox][value="+ value + "]").prop("checked", true);
+				});
+			} else {
+				$("input[type=checkbox][value="+ issues+ "]").prop("checked", true);
+			}
+			/*if ($.isArray(issuestatus)) {
+				$.each(issuestatus, function(index, value) {
+					$("input[type=checkbox][value="+ value + "]").prop("checked", true);
+					//$("input[type=checkbox][name="+ value + "]");
+				});
+			} else {
+				$("input[type=checkbox][value="+ issuestatus+ "]").prop("checked", true);
+				//$("input[type=checkbox][name="+ issuestatus + "]");
+			}*/
+		});	
+		$.fn.serializeObject = function() {
+			var o = {};
+			var a = this.serializeArray();
+			$.each(a, function() {
+			if (o[this.name] !== undefined) {
+				if (!o[this.name].push) {
+					o[this.name] = [o[this.name]];
+				}
+				o[this.name].push(this.value || '');
+			} else {
+				o[this.name] = this.value || '';
+			}
+			});
+			return o;
+		};		
+		$(document).on("click", "#done-button" , function() {
+			$('#success-integration').foundation('close');
+			$("#integration-form").hide();
+			listIntegrations();
+	    });	
+		
+		$(document).on("click", "#instance-list-block .remove-config" , function() {
+			console.log("on click remove");
+			/*instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+					console.log("instanceData...."+instanceData);
+				}
+			});
+			var config=JSON.parse(instanceData.configJson);
+			selectedRoomName=config.room_name;*/
+			$("#description-label").html(displayName);//config.description
+			$("#addedon-label").html("Added on: Jun 29th, 2016");//+instanceData.createdDate
+			$("#remove-msg").html("Are you sure you  want to remove integration from "+selectedRoomName+" room?");	
+			formAction="remove";
+			$('#remove-integration-btn').text("Remove");			
+		});	
+		$('#cancel-remove-integration').click(function(e){
+			e.preventDefault();
+			$('#remove-integration-popup').foundation('close');
+		});		
+		$('#remove-integration-btn').click(function(e){
+			e.preventDefault();
+			$('#remove-integration-popup').foundation('close');
+			if(formAction=="removeAll") {
+				removeAllIntegrationInstances("remove");
+			} else { 
+				//removeIntegrationInstance(instanceId);
+				removeIntegrationInstance();
+			}
+		});
+		function removeIntegrationInstance(instanceId) {
+			//console.log("removeIntegrationInstance instanceId..."+instanceId);
+			$('.loading-second-block').html('Removing integration for the room '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({//url: delete_instance_url+"?instanceId="+instanceId,
+				url:delete_instance_url,
+				//type:"DELETE",
+				//async:true,
+				success: function(result){		
+					console.log("removeIntegrationInstance");
+					localStorage.removeItem("formdata");
+					$('#instance-list-block').hide();
+					listIntegrations();
+					$('#loading-block').foundation('close');
+				},
+				error: function (error) {
+					$('#loading-block').foundation('close');
+					console.log('error while removing integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-second-block').html('');
+	    }
+    });
+	function loadJiraForm(){
+		//console.log("spark_token.... "+spark_token);
+		//console.log("trello_token.... "+integration_token);
+		//$('#loading-block').foundation('open');
+		document.getElementById("form").reset();//static
+		var rooms = formData.Rooms;
+		var issuestatus = formData.IssuesStatus;
+		$.ajax({
+			//url: configuration_settings_url+"?sparkToken="+spark_token,
+			//async: true,
+			url:'test.html',//static
+			success: function(result){
+				/*var profiles = result["sparkProfileSettings"];
+				var rooms = result["sparkRoomSettings"].items;
+				var webhook_details = result["integrationSpecificSettings"].webhook_details;
+				instance_uuid = webhook_details["instance_uuid"];
+				$("input#userid").val(profiles["id"]);
+				$("input#username").val(profiles["displayName"]);*/
+				$("input#userid").val("test123");//static
+				$("input#username").val("testuser");//static
+				$('#rooms')[0].options.length = 1;	
+				$('#issuestatus')[0].options.length = 1;	
+				$.each(rooms, function(id,obj){
+					//if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+				});
+			
+				$.each(issuestatus, function(id,obj){
+					//if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#checkboxes").append($('<label>').attr('for',obj.title).attr('id',obj.title));
+					$("#"+obj.title).append($('<input>').attr('type','checkbox').attr('id',obj.title).attr('value',obj.title));
+					
+				});
+				
+				/*$('#webhookURL').val(webhook_details["webhook_url"]);*/
+				$('#webhookURL').val("https://integrations.ciscospark.com/v1/integrations/1146/00be617f-9256-4c7c-85b2-a80c20b8e221");//static
+				$("#rooms").val(selected_room_id);
+				$('.custom-select span').html($("#rooms option:selected").text());
+				$("#issuestatus").val('');
+				selected_room_id="0";
+				//selected_issue_status="0";
+				$("#integration-form").show();
+				$('#integrations-block').hide();
+				//$('#loading-block').foundation('close');
+				$("#rooms").customselect();
+				//resize();		
+	
+				/*$(function () {
+					$('#issuestatus').multiselect({
+						buttonText: function(options){
+						  if (options.length === 0) {
+							  return 'Find Statuses...';
+						   }
+						   var labels = [];
+						   options.each(function() {
+							   if ($(this).attr('value') !== undefined) {
+								   labels.push($(this).attr('value'));
+							   } 
+							});
+							return labels.join(', ');  
+						 }
+					}); 
+				});*/
+			},
+			 error: function (error) {
+				//$('#loading-block').foundation('close');
+				$('#integration-form').hide();
+				$('#integrations-block').show();
+                console.log('error while loading integration form data..' + error);
+				alert('Some problem occured, Pleaase try after some time');	
+            }
+		});			
+	}
+	
+	
+		
+	function objLength(obj){
+		var i=0;
+		for (var x in obj){
+			if(obj.hasOwnProperty(x)){
+				i++;
+			}
+		} 
+		return i;
+	}
+    function savePagerdutyInstance() {
+		var res = $('form').serializeObject();//static
+		selectedRoomName=$("#rooms option:selected").text();//static
+		displayName = $('#displayName').val();//static
+		var response = JSON.stringify($('form').serializeObject());//static
+		localStorage.setItem("formdata",response);//static
+		console.log("res...." + JSON.stringify(res));//static
+		
+		/*var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		var jsonData = {};			
+		jsonData["channelId"] = $("#rooms option:selected").val();									
+		jsonData["integrationId"] = integration_id;
+		jsonData["status"] = "ACTIVE";
+		//jsonData["integration_token"] = integration_token;
+		jsonData["spark_token"] = spark_token;
+		jsonData["userId"] = $("#userid").val();
+		jsonData["configJson"]={};
+		jsonData["configJson"]["room_name"]= selectedRoomName;
+		jsonData["configJson"]["user_name"] = $("#username").val();
+		jsonData["configJson"]["displayName"]= res.displayName;
+		jsonData["configJson"]["issues"]=res.issues;	
+		//jsonData["configJson"]["webhook_details"]={};
+		jsonData["configJson"]["webhook_url"]=$("#webhookURL").val();
+		//jsonData["configJson"]["webhook_details"]["instance_uuid"]=instance_uuid;
+		jsonData["instanceUuid"]=instance_uuid;
+		jsonData["messageFormat"]="PagerDuty :Bot"+"Hello...";
+		var actionType;*/
+		var action_url;
+		if(formAction=="update") {
+			/*jsonData["instance_id"] = instanceId;
+			jsonData["room_id_old"] = room_id_old;
+			action_url=update_configuration_settings_url+instanceId;*/
+			action_url=update_configuration_settings_url,//static
+			//actionType="PUT";
+			$('.loading-first-block').html('Please wait while your Integration is being updated');
+			console.log("update integration call");
+		} else {
+			//action_url=save_configuration_settings_url;
+			action_url=save_configuration_settings_url,//static
+			//actionType="POST";
+			$('.loading-first-block').html('Please wait while your Integration is being set up');
+		}
+		//var jsonString = JSON.stringify(jsonData);
+		var notificationslength = objLength(res.issues);
+		console.log("notificationslength..."+notificationslength);
+		if($('#rooms').val()==0){
+			alert("Please select Room");
+		}else if(notificationslength==0) {
+			alert("Please select atleast one Incident");
+		}else {
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({//url: action_url+"?sparkToken="+spark_token,
+				url: action_url,
+				/*async:true,
+				type: actionType,
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",*/
+				success: function(result){	
+					$('#success-integration').foundation('open');
+					$('#loading-block').foundation('close');					
+				},
+				error: function (error) {
+					//listIntegrations();
+					$('#loading-block').foundation('close');
+					console.log('error while saving integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-first-block').html('Please wait just a moment while your app is loading');
+			$('.loading-second-block').html('');
+		}
+		//console.log(jsonString);
+	}
+	function listIntegrations() {
+		console.log("listIntegrations...");
+		$("#integration-form").hide();
+		$('#loading-block').foundation('open');		
+		$.ajax({//url: list_integration_instances_url,
+			url:list_integration_instances_url,
+			//async:true,
+			success: function(result){		
+				//console.log("listIntegrations result...."+result);
+				listInstancesData(result);
+				$('#loading-block').foundation('close');
+				$("#integrations-block").show();
+				//resize();
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				console.log('error while retrieving the list of integration instances..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});	
+	}
+	function listInstancesData(result) {
+		$("#integrations-block").show();
+			if(localStorage.getItem("formdata")!=null)
+			$("#instance-list-block").show();
+			var listDataHTML="";
+			//listResultData=result;
+			//$.each(listResultData, function(i, instance) {
+				//var configData=JSON.parse(instance.configJson);
+				listDataHTML+='<div class="large-12 columns instance-background"><br>';
+				listDataHTML+='<div class="large-8 medium-8 columns integration-details">';
+				listDataHTML+='<img src="'+icon_url+'" alt="pagerduty">';
+				listDataHTML+='<label>'+displayName+'</label>';
+				listDataHTML+='<label>'+selectedRoomName+'</label>';
+				listDataHTML+='<label>Added: Jun 29th, 2016</label>';
+				listDataHTML+='</div>';
+				listDataHTML+='<div class="large-3 medium-3 columns edit-remove-icons">';
+				listDataHTML+='<span id="1234" data-open="remove-integration-popup" class="cross-mark remove-config"></span>';
+				listDataHTML+='<a id="edit-config" class="edit-config">Edit</a>';
+				listDataHTML+='</div>';
+				listDataHTML+='</div><hr class="instance-hr">';			
+			//});
+		$("#instance-list-block").html(listDataHTML);
+		/*if(listResultData.length<=1){ $("#remove-all-config").hide();}
+		else { $("#remove-all-config").show();}*/
+	}	
+	 var expanded = false;
+    function showCheckboxes() {
+        var checkboxes = document.getElementById("checkboxes");
+        if (!expanded) {
+            checkboxes.style.display = "block";
+            expanded = true;
+        } else {
+            checkboxes.style.display = "none";
+            expanded = false;
+        }
+    }
+</script>
+</head>
+
+<body data-whatinput="mouse">
+	<div class="integration-app row" id="jira"><br>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading">
+				<img src="https://183.82.99.100:8443/CiscoWebcontent/images/sparkSm.png" alt=".....">
+			</div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block">name and room name</div>
+				<br>
+				<div class="loading-bar"><div class="loading-background"></div>
+					<!---->
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your
+				integration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns desktop-block">
+				<div class="row remove-integration-mobile">
+					<div class="large-2 medium-2 columns"><img alt="" src="https://183.82.99.100:8443/CiscoWebcontent/images/jira.png"/></div>
+					<div class="large-6 medium-6 columns" style="float:left;">
+						<label id="description-label">Trello</label>
+						<label id="addedon-label"></label>
+					</div>
+				</div><br>
+				<div class="msg-labels">
+					<label id="remove-msg"></label> 
+					<label id="remove-auth"></label>
+				</div>
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button remove-integration-mobile" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+			<div class="large-12 columns mobile-block">
+				<div class="msg-labels">
+					<label id="remove-msg"></label> 
+					<label id="remove-auth"></label>
+				</div>
+				<div class="option-buttons">
+					<label class="remove-popup-cancel"> 
+						<a href="#" id="cancel-remove-integration">cancel</a>
+					</label>
+					<label class="remove-popup-remove">
+						<a href="#" id="remove-integration-btn">remove</a>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home" >
+				<div class="row">
+				<div class="large-12 medium-12 columns">							
+					<div class="large-6 medium-6 columns config-name"><label>Jira Configuration</label></div>
+					<div class="large-6 medium-6 columns">
+						<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+						<button class="secondary button" id="add-config">Add</button>
+					</div>					
+				</div>
+			    </div>
+			    <hr>
+				<div id="instance-list-block" class="row">
+					
+				</div>
+			</div>
+		</div>
+		<div class="large-12 columns" id="integration-form" >
+			<form name="form" id="form" method="post">
+				<div class="row">
+					<div class="large-12 medium-12 columns"><label class="heading-01">Jira Configuration</label></div>
+				</div>
+				<div class="row">
+					<div class="large-12 columns">
+						<div class="large-12 medium-12 columns events">
+							<div class="large-2 medium-2 columns events" >
+								<label>Issues</label>
+							</div>
+							<div class="large-10 medium-10 columns events" >
+								<div class="events-sub" id="issues">
+									<div class="large-12 medium-12 columns">
+										<div class="large-2 medium-2 columns checkBox">
+											<input type="checkbox" name="issues" id="issue-created" value="issue_created"><label for="issue-created">Issue Created</label>
+										</div>
+										<div class="large-2 medium-2 columns">&nbsp;</div>
+										<div class="large-2 medium-2 columns checkBox">
+											<input type="checkbox" name="issues" id="issue-updated" value="issue_updated"><label for="issue-updated">Issue Updated</label>
+										</div>
+										<div class="large-2 medium-2 columns">&nbsp;</div>
+										<div class="large-2 medium-2 columns checkBox">
+											<input type="checkbox" name="issues" id="issue-deleted" value="issue_deleted"><label for="issue-deleted">Issue Deleted</label>
+										</div>
+										<div class="large-2 medium-2 columns">&nbsp;</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div><br>
+				<!--<div class="row">
+					<div class="large-8 columns">
+						<div class="large-3 medium-2 columns left">
+							<label>Issue transitioned to:</label>
+						</div>
+						<div class="large-5 medium-5 columns text left input-left">
+							<select name="issuestatus" id="issuestatus">
+							<option value='0'>Please Select</option></select>
+						</div>
+					</div><br><br>
+				</div>-->
+				
+				<div class="row">
+					<div class="large-12 columns">
+						<div class="large-2 medium-2 columns">
+							<label>Issue transitioned to:</label>
+						</div>
+						<div  class="large-10 medium-10 columns">
+							
+							<div  class="large-4 medium-4 columns">
+								<div class="multiselect">
+									<div class="selectBox" onclick="showCheckboxes()">
+										<select id="issuestatus">
+											<option>Select an option</option>
+										</select>
+										<div class="overSelect"></div>
+									</div>
+									<div id="checkboxes">
+										
+									</div>
+								</div>
+							</div>
+															
+						</div><br><br>
+						<div class="large-12 columns"></div>
+					</div>
+				</div>
+				<!--<div class="row">
+					<div class="large-12 columns">
+						<div class="large-2 medium-2 columns">
+							<label>Issue transitioned to:</label>
+						</div>
+						<div  class="large-10 medium-10 columns">
+							
+							<div  class="large-4 medium-4 columns">
+								<select name="issuestatus"  multiple="multiple" id="issuestatus">
+									
+								</select>
+							</div>
+															
+						</div><br><br>
+						<div class="large-12 columns"></div>
+					</div>
+				</div>-->
+				<div class="row"><br>
+					<div class="large-12 columns">
+						<div class="large-2 medium-2 columns">
+							<label>Webhook URL</label>
+						</div>
+						<div class="large-10 medium-10 columns">
+							<input type="text" id="webhookURL"  name="webhookURL" readonly/>					
+						</div>
+					</div>
+				</div><br>
+				<div class="row">
+					<div class="large-10 medium-10 columns">
+						<h3 class="heading-01">Spark Configuration</h3>
+						<br> 
+						<div class="large-8 columns">
+							<div class="large-2 medium-2 columns small-mobile">
+								<label>Room</label>
+							</div>
+							<div class="large-6 medium-6 columns text left input-small-mobile">
+								<select name="room"	id="rooms" class="custom-select">
+									<option value="0">Select</option>
+								</select>
+							</div>
+						</div><br><br>
+						<div class="large-8 columns">
+							<div class="large-2 medium-2 columns small-mobile">
+								<label>Name</label>
+							</div>
+							<div class="large-6 medium-6 columns text left input-small-mobile" >
+								<input type="text" name="displayName" id="displayName" class="integration_name" value="">
+							</div>
+						</div><br>
+						<input type="hidden" name="userid" id="userid" value="">
+						<input type="hidden" name="username" id="username" value="">						
+						<input type="hidden" name="ownername" id="ownername" value="">						
+					</div>
+				</div><br>
+				<div class="row">
+					<div class="large-12 medium-12 columns" >&nbsp;</div>
+					<div class="large-7 columns">
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button" id="submit-button">Add Integration</button>
+					</div>
+				</div><br>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

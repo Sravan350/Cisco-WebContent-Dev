@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Market Place</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="./css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="./css/collab-ui.min.css" rel="stylesheet" type="text/css"> 
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="./js/collab-formly.js"></script>
+<script src="./js/collab-ui.js"></script>
+<script type="text/javascript" src="porthole.min.js"></script>
+<style>
+label{width:20px;}
+</style>
+<script type="text/javascript">
+  function resizeIframe(obj) {
+  
+    
+  }
+var guestDomain = '183.82.99.100:7080';
+//var guestDomain = 'https://www.google.co.in/';
+
+function onMessage(messageEvent) {  
+console.log('on message'+messageEvent);
+	if (messageEvent.origin == "http://" + guestDomain) {
+		if (messageEvent.data["connectIntegration"]) {
+			if(messageEvent.data["statusCode"]==200){
+				console.log("connectIntegration");
+			} else {}	
+		}						
+		if (messageEvent.data["disconnectIntegration"]) {
+			if(messageEvent.data["statusCode"]==200){
+				console.log("disconnectIntegration");
+			} else {}
+		}	
+		if (messageEvent.data["resize"]) {
+		
+		    console.log('message event height'+messageEvent.data["height"]+"px");
+		
+			el = document.getElementById('guestFrame1');
+			el.setAttribute('height', messageEvent.data["height"]+"px");
+			el.setAttribute('width', messageEvent.data["width"]+"px");
+			 var iFrameID = document.getElementById('guestFrame1');
+			/*if(iFrameID) {
+            // here you can make the height, I delete it first, then I make it again
+           // iFrameID.height = "";
+			
+           // iFrameID.height = 10+iFrameID.contentWindow.document.body.scrollHeight + "px";
+			var theFrame = $("#guestFrame1", parent.document.body);
+			alert("***************"+$(document.body).height());
+			//theFrame.height($(document.body).height() + 30);
+		  
+		    var isChrome = !!window.chrome && !!window.chrome.webstore;
+			var isFirefox = typeof InstallTrigger !== 'undefined';
+			
+			   if(isChrome)
+            {
+            
+            var iframeWin = iFrameID.contentWindow || iFrameID.contentDocument.parentWindow;
+            if (iframeWin.document.body) {
+            console.log('inside if chrome1234');
+            iFrameID.height = iframeWin.document.documentElement.scrollHeight || iframeWin.document.body.scrollHeight;
+               }
+            }else {
+          //if(isFirefox)
+          
+          
+            iFrameID.height = messageEvent.data["height"]+"px";
+          }
+		    
+		   
+		   
+		   
+		  
+		}  */ 
+			
+		}
+	}
+}
+
+var windowProxy1, windowProxy2;
+window.onload=function(){ 
+		// Create a proxy window to send to and receive message from the guest iframe
+		windowProxy1 = new Porthole.WindowProxy('proxy.html', 'guestFrame1');
+		windowProxy1.addEventListener(onMessage);
+
+		
+};
+
+$(document).ready(function(){
+
+	$("#add-config").click(function (e){
+		
+		console.log("here");
+		var id = $("#intName").val();
+		var token = $("#token").val();
+		var action = $("#action").val();
+		$("#guestFrame1").attr('src', id);
+	});
+});
+
+</script> 
+
+
+</head>
+
+<body >
+
+<div style="width:30%;float:left;">
+	<h1>Market place</h1>  <br>
+	<div class="large-12 medium-12 columns">
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>Name</b></label></div>						
+			<div class="large-10 medium-10 columns" ><input type="text" name="int_name" id="intName" value="bitbucket.html" placeholder="Id">
+			</div>
+		</div>
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>Spark Token</b></label></div>
+			<div class="large-10 medium-10 columns" >
+				<input type="text" name="int_name" id="token" value="MTY4OTU3MWMtNDRkZS00MGI5LTg0YjgtZjQyZDQ0MWM4ZjQ3MGY5NzU1MWMtMDlh">
+			</div>
+		</div>
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" >
+				<label><b>Action</b></label>
+			</div>
+			<div class="large-10 medium-10 columns" >
+				<input type="text" name="action" id="action" value="connect">
+			</div>
+		</div>
+	</div>
+
+	<div class="large-8 medium-8 columns"><br>
+		<button class="button" id="add-config">Submit</button>  
+	</div>
+</div>
+<br>
+<!--  <iframe id="guestFrame1" name="guestFrame1" width="500px" frameborder="0" src="http://183.82.99.100:7080/IframeTest/createbitbucket.html?integrationId=ABCDEF&token=1234567">
+-->
+<div style="width:70%;float:right;">
+	<iframe id="guestFrame1" name="guestFrame1" width="800px" frameborder="1" src=""   onload="resizeIframe(this)">	</iframe>
+	<br><br>
+<!--<h3>Footer</h3>-->
+</div>
+</body>
+</html>

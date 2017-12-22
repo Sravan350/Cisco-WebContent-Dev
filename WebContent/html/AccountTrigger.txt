@@ -1,0 +1,9 @@
+    trigger accountWebhookTrigger on Account (after insert,after update,after undelete,after delete) {
+
+    String url = 'http://183.82.99.100:7060/test';
+
+    String content = Webhook.jsonContent(Trigger.new, Trigger.old);
+
+    Webhook.callout(url, content);
+
+}

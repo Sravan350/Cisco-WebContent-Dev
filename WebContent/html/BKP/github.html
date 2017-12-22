@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Git Hub Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="http://183.82.99.100:7080/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="http://183.82.99.100:7080/CiscoWebcontent/css/collab-ui.min.css" rel="stylesheet" type="text/css">
+<link href="http://183.82.99.100:7080/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="http://183.82.99.100:7080/CiscoWebcontent/js/collab-formly.js"></script>
+<script src="http://183.82.99.100:7080/CiscoWebcontent/js/collab-ui.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/CiscoWebcontent/js/porthole.min.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/CiscoWebcontent/js/scripts.js"></script>
+<script>
+	iconName="https://183.82.99.100:8443/CiscoWebcontent/images/github.png";
+	var repo_modified=false;
+	var repo_name_old="";
+	var selected_repo_id="0";
+	var application_id="1";
+	
+	
+	$( document ).ready(function() {
+	
+		application_auth_details_url="/api/applications/"+application_id;
+		token_url="/api/integrations/"+integration_id+"/authDetails";
+		save_spark_token_url="/api/clients/tokens";
+		save_app_token_url="/api/integrations/"+integration_id+"/appTokens";
+		configuration_settings_url="/api/integrations/"+integration_id+"/uiSettings";
+		save_configuration_settings_url="/api/integrations/instances";
+		update_configuration_settings_url="/api/integrations/instances/";
+		delete_instance_url="/api/integrations/instances/";
+		disconnect_integration_url="/api/integrations/instances";
+		list_integration_instances_url="/api/integrations/instances";		
+		removeall_integration_instances_url="/api/integrations/removeallinstances";		
+			
+		action=action.toLowerCase();
+
+		if(action=="connect") {
+			$("#integrations-block").hide();
+			$('#integration-form').hide();
+			setIntegrationAppAuthDetails(integration_id);
+		} else if(action=="disconnect") {
+			formAction="disconnect";
+			removeAllIntegrationInstances(formAction);
+		} else {
+			console.log("list");
+			listIntegrations();
+		}
+		
+		$("#github #repos").on('change',function(){
+			repo_modified=true;
+			console.log("repo_modified....");
+		});	
+		$("#github #rooms").on('change',function(){
+			room_modified=true;
+			console.log("room_modified....");
+		});	
+		$("#github #submit-button").click(function (e){
+			e.preventDefault();
+			console.log("form Action: "+formAction);
+			saveGithubInstance();
+		});
+		$("#cancel-button").click(function (e){
+				e.preventDefault();			
+				$('#integration-form').hide();
+				$('#integrations-block').show();
+				resize();
+		});
+		$('#github #add-config').click(function(e){
+			e.preventDefault();	
+			formAction="add";
+			loadForm();
+			$("#submit-button").text("Add Integration");
+		});
+	
+		$(document).on("click", "#github #instance-list-block .edit-config" , function(e) {
+			console.log("edit instance");
+			formAction="update";
+			repo_modified=false;
+			room_modified=false;
+			$("#submit-button").text("Save");
+			instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;				
+				}
+			});
+			console.log("instanceData........." + instanceData);
+			console.log("instanceData.channelId " + instanceData.channelId);
+			selected_room_id=instanceData.channelId;
+			var config=JSON.parse(instanceData.configJson);
+			selected_repo_id=config.repo_id;
+			loadForm();
+			$('#displayName').val(config.displayName);
+			resize();		
+			repo_name_old = config.repo_name;
+			room_id_old = instanceData.channelId;
+			var notifications=config.notifications;
+			var events = notifications.events;
+			
+			if($.isArray(events)) {
+				$.each(events,function(index,value){
+					$("input[type=checkbox][value="+value+"]").prop("checked",true);
+				});
+			} else {
+				$("input[type=checkbox][value="+events+"]").prop("checked",true);
+			}
+		});	
+    });
+	function setIntegrationAppAuthDetails() {
+		var OAUTHURL    =   '';//specific integration app oauth url
+		var CLIENTID    =   'Wa2LwcLmLWgyCFYJfM';
+		var TYPE        =   'code';
+		$.ajax({url: application_auth_details_url,
+			async:false,
+			success: function(result){
+				//CLIENTID=result.clientid;
+				OAUTHURL= result.authorizationEndpoint				
+				OAUTHURL=OAUTHURL+'?client_id='+CLIENTID+'&response_type='+TYPE;
+				console.log("OAUTHURL..."+OAUTHURL);
+				loginWithAuthDetails(OAUTHURL);	
+			},
+			error: function (error) {
+				console.log('error while getting authorization detals..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});		
+	}
+	function loginWithAuthDetails(oauthURL) {
+		console.log("loginWithAuthDetails OAUTHURL..."+oauthURL);
+        var win = window.open(oauthURL, "windowname1", 'width=600, height=600'); 
+        var pollTimer = window.setInterval(function() { 
+            try {
+                if (win.document.URL.indexOf("code") != -1) {
+                    window.clearInterval(pollTimer);
+                    var url =   win.document.URL;
+                    console.log("url..."+url);
+                    accessCode =   gup(url, 'code');
+                    tokenType = gup(url, 'token_type');
+                    expiresIn = gup(url, 'expires_in');
+                    win.close();
+					getIntegrationAppTokenDetails(accessCode);
+                }
+            } catch(e) {
+				console.log('error while getting authorization code..'+e);
+            }
+        }, 100);
+    }
+	function getIntegrationAppTokenDetails(code) {
+		var jsonObject={};
+		jsonObject["integrationId"] = integration_id;
+		jsonObject["authSettings"] = {};
+		jsonObject["authSettings"]["code"] = code;
+		jsonString=JSON.stringify(jsonObject);
+		console.log("getIntegrationAppTokenDetails jsonString..."+jsonString)
+		$.ajax({url: token_url,
+			async:false,
+			type: "POST",
+			data: jsonString,
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){
+				saveSparkToken();
+				var tokenDetails=result["integrationSpecificAuthDetails"]["tokenDetails"];
+				var jsonObject={};
+				jsonObject["applicationId"] = application_id;
+				jsonObject["integrationId"] = integration_id;
+				jsonObject["accessToken"] = tokenDetails.access_token;
+				jsonObject["expires"] = tokenDetails.expires;
+				jsonObject["refreshToken"] = tokenDetails.refresh_token;
+				jsonObject["refreshExpires"] = tokenDetails.refresh_expires;
+				var jsonString=JSON.stringify(jsonObject);
+				saveIntegrationAppToken(jsonString);
+				connectIntegration();
+				loadForm();
+			},
+			error: function (error) {
+				console.log('error while getting token details..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});
+	}
+	function loadForm() {
+		loadGithubForm();
+	}
+	function loadGithubForm(){
+		console.log("spark_token.... "+spark_token);
+		document.getElementById("form").reset();
+		$('#loading-block').foundation('open');
+		$.ajax({
+			url: configuration_settings_url+"?sparkToken="+spark_token,
+			async:true,
+			success: function(result){	
+				$('#integration-form').show();
+				var rooms = JSON.parse(result[0]).items;
+				var repos = JSON.parse(result[1]);				
+				$("input#ownername").val( repos[0].owner["login"]);
+				$("input#userid").val(result[2].id);
+				$("input#username").val(result[2].displayName);
+				$('#repos')[0].options.length = 1;
+				$('#rooms')[0].options.length = 1;
+				$.each(repos, function(id,obj){
+					$("#repos").append($('<option>').text(obj.name).attr('value',obj.id));
+				}); 				
+				$.each(rooms, function(id,obj){
+					if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+				});
+				$("#rooms").val(selected_room_id);
+				$("#repos").val(selected_repo_id);
+				selected_room_id="0";
+				selected_repo_id="0";
+				$('#integrations-block').hide();				
+				$('#integration-form').show();	
+				$('#loading-block').foundation('close');
+				$("#rooms").customselect();
+				resize();			
+			},
+			error: function (error) {
+				 $('#loading-block').foundation('close');
+				 $('#integration-form').hide();
+				 $('#integrations-block').show();
+				 console.log('error while loading integration form data..' + error);
+				 alert('Some problem occured, Pleaase try after some time');
+			}
+	    });		
+    }
+ 	
+    function saveGithubInstance() {
+		var res = $('form').serializeObject();
+		console.log("submit res " + res);
+		var selectedRoomName=$("#rooms option:selected").text();
+		var jsonData = {};			
+		jsonData["room_id"] = $("#rooms option:selected").val();;									
+		jsonData["integration_id"] = integration_id;
+		//jsonData["integration_token"] = integration_token;
+		//jsonData["spark_token"] = spark_token;
+		jsonData["user_id"] = $("#userid").val();
+		jsonData["config"]={};
+		jsonData["config"]["room_name"]= selectedRoomName;
+		jsonData["config"]["repo_id"] = res.repositories;
+		console.log("res string...."+JSON.stringify(res));
+		jsonData["config"]["repo_name"]= ($("#repos option:selected").text()).toLowerCase().replace(" ","-");
+		jsonData["config"]["user_name"] = $("#username").val();
+		jsonData["config"]["owner_name"]=$("#ownername").val();
+		jsonData["config"]["displayName"]= res.displayName;
+		jsonData["config"]["notifications"]={};			
+		jsonData["config"]["notifications"]["events"] = res.events;
+        var action_url;
+		var actionType;
+		 if(formAction=="update") {
+			jsonData["instance_id"] = instanceId;
+			jsonData["repo_modified"] = repo_modified;
+			jsonData["repo_name_old"] = repo_name_old;
+			jsonData["room_modified"] = repo_modified;
+			jsonData["room_id_old"] = room_id_old;
+			action_url=update_configuration_settings_url+instanceId;
+			actionType="PUT";
+			console.log("update integration");
+		 } else{
+		    action_url =save_configuration_settings_url;
+			actionType="POST";
+		}
+		console.log("save_configuration_settings_url : " + save_configuration_settings_url);
+		var jsonString = JSON.stringify(jsonData);
+		console.log("jsonString: " + jsonString);
+		var notificationslength = objLength(res.events);
+		
+		if($('#repos').val()==0){
+			alert("Please select Repository");
+		} else if($('#rooms').val()==0){
+			alert("Please select Room");
+		} else if(notificationslength==0) {
+			alert("Please select atleast one Event");
+		} else { 
+			console.log(jsonString);
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({url: action_url,
+				async: true,
+				type: actionType,
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){				
+					$('#loading-block').foundation('close');
+					$('#success-integration').foundation('open');
+				},
+				error: function (error) {
+					//listIntegrations();
+					$('#loading-block').foundation('close');
+					console.log('error while saving integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-first-block').html('Please wait just a moment while your app is loading');
+			$('.loading-second-block').html('');
+		}
+		console.log(jsonString); 
+	}
+</script>
+</head>
+<body>
+
+<div class="integration-app" id="github"><br> <br>
+		<!--<div id="loading-block" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-image">
+					<img src="http://183.82.99.100:7080/CiscoWebcontent/images/loadingImage.gif" alt=".....">
+				</div>
+			</div>
+		</div>-->
+		<div id="loading-block" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading">
+				<img alt="...." src="https://183.82.99.100:7080/CiscoWebcontent/images/sparkSm.png"/>
+			</div>
+			<div class="loading-div-background"><div class="loading">&nbsp;</div>
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-line"><div class="loading-background"></div>
+					
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your
+				integration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns" style="width: 85%;">
+			    
+					<div class="row remove-integration-mobile">
+						<div class="large-2 medium-2 columns"><img alt="" src="http://183.82.99.100:7080/CiscoWebcontent/images/trello.png"/></div>
+						<div class="large-6 medium-6 columns" style="float:left;">
+							<label id="description-label">Trello</label>
+							<label id="addedon-label"></label>
+						</div>
+					</div><br class="remove-integration-mobile">
+					<div class="msg-labels">
+						<label id="remove-msg"></label> 
+						<label id="remove-auth"></label>
+					</div>
+				
+				<div class="option-buttons remove-integration-buttons">
+					 <div>
+						 <a href="#" class="remove-popup-cancel">cancel</a>
+						 <a href="#" class="remove-popup-remove">remove</a>
+					 </div>
+				</div>
+				<button class="close-button remove-integration-mobile" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br class="remove-integration-mobile"><br class="remove-integration-mobile">
+				<button class="button remove-integration-mobile" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home" >
+				<div class="row">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns config-name"><label>Trello Configurations</label></div>
+						<div class="large-6 medium-6 columns">
+							<button class="button" id="add-config">Add</button>
+							<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+						</div>					
+					</div>
+				</div>
+				<hr>
+				<div id="instance-list-block" class="row">				
+				</div>
+			</div>
+		</div>
+		<div class="large-12 columns" id="integration-form">
+			<form name="form" id="form" method="post">
+				<div class="row">
+					<div class="large-12 columns">
+						<h3 class="heading-01">GitHub Configuration</h3><br>
+						<!-- <label><b>GitHub Repository</b></label>
+						<div class="large-4 medium-4 columns">Which repository should we listen to events on?</div>-->
+						<div class="large-10 medium-10 columns" style="float:left;">
+							<div class="large-3 medium-3 columns"><label>GitHub Repository</label></div>						
+							<div class="large-6 medium-6 columns text left">
+								<select name="repositories"  id="repos" class="dropdown"><option value="0">Select</option></select>
+							</div>	
+						</div>						
+					</div>
+				</div><div class="row">&nbsp;</div>
+				<div class="row">
+					<div class="large-12 columns">
+						<div class="large-12 medium-12 columns events">
+							<label>Events</label>
+							<div id="events" class="events-sub">
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="create"/><label for="">Branch or Tag created</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="delete"/><label for="">Branch or Tag deleted</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="pull_request"/><label for="">Pull requests</label></div>	
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="commit_comment"/><label for="">Commit comments</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="pull_request_review_comment"/><label for="">Pull request comments</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="deployment"/><label for="">Deployment</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="push"/><label for="">Pushes</label></div>	
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="deployment_status"/><label for="">Deployment status</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="release"/><label for="">Releases</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="fork"/><label for="">Forks</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="watch"/><label for="">Stars</label></div>	
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="issues"/><label for="">Issues</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="status"/><label for="">Statuses</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="issue_comment"/><label for="">Issue comments</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="team_add"/><label for="">Team adds</label></div>	
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><input type="checkbox" id="" name="events" value="member"/><label for="">Members</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-4 medium-4 columns"><input type="checkbox" id="" name="events" value="gollum"/><label for="">Wiki pages</label></div>
+									<div class="large-8 medium-8 columns">&nbsp;</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-10 medium-10 columns">
+						<h3 class="heading-01">Spark Configuration</h3>
+						<br> 
+						<div class="large-8 columns">
+							<div class="large-2 medium-2 columns" ><label>Room</label>
+							</div>
+							<div class="large-6 medium-6 columns text left" >
+								<select name="room"	id="rooms" class="custom-select"><option value="0">Select</option></select>
+							</div>
+						</div><br><br>
+						<div class="large-8 columns">
+							<div class="large-2 medium-2 columns" >
+								<label>Name</label>
+							</div>
+							<div class="large-6 medium-6 columns text left input-left" >
+								<input type="text" name="displayName" id="displayName" class="integration_name" value="">
+							</div>
+						</div><br>
+						<input type="hidden" name="userid" id="userid" value="">
+						<input type="hidden" name="username" id="username" value="">						
+						<input type="hidden" name="ownername" id="ownername" value="">						
+					</div>
+				</div>
+				<br>
+				<div class="row">
+					<div class="large-5 medium-5 columns" >&nbsp;</div>
+					<div class="large-4 medium-4 columns left" >
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button secondary text" id="submit-button" >Add Integration</button>
+					</div>
+				</div><br>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

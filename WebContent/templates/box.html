@@ -1,0 +1,2831 @@
+<!DOCTYPE html>    
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Box integration to Cisco Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://d24wgzqqegxpap.cloudfront.net/api/css/collab-ui-min.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/select2.min.css" rel="stylesheet" />  
+<style>
+.subitems-loading1{margin:0 37px 0 0;}
+.sub-folderfiles-tooltip{margin:-16px 0 0 50px !important;}
+.nested-folderfiles-tooltip{margin:--11px 0 0 20px !important}
+.search-folderfile-tooltip{margin:-18px 0 0 4.5rem !important;}
+.search-items-loading{margin: -65px -60px 0 0 !important;}
+.button-control{ bottom: 15px;
+    padding: 0px;
+    position: absolute;
+    right: 13px;
+}
+.search-btn{
+	width: 25% !important;
+    margin: -4.25rem 0 0 16.5rem;
+    margin-left: 83%;
+ }
+
+#webhook-warning-modal {
+	margin-top : 50%;
+	width: 428px;
+	height: 180px;
+}
+@media screen and (max-width: 430px){ 
+	.more_folders_files{
+		margin: -55px 0px 0px 103% !important;
+		}
+	.spaces-refresh {
+		margin: -39px 0px 0px 100% !important;
+		}
+		.dropdown-config{ margin-left :-6px;}
+		.subitems-loading1{margin: -58px -29px 0 0 !important;}
+		.subitems-loading{margin: -5px -30px 0 0px !important;}
+		.search-items-loading{margin: -67px -63px 0 0 !important;}
+}
+	
+	
+@media screen and (max-width: 650px) {
+	.more_folders_files{
+		margin: -55px 0px 0px 103% !important;
+	}
+	.search-items-loading{margin: -67px -63px 0 0 !important;}
+	.subitems-loading{margin: -5px -30px 0 0px !important;}
+	.dropdown-config{ margin-left :-6px;}
+}
+	
+
+
+
+@media screen and (max-width: 650px) {
+	.box-info-icon {
+		margin: 1.4rem -2.5rem 0 0;
+	}
+	.edit-remove-icons, .github-edit-remove-icons {
+		margin: 15px 0 0 0;
+	}
+	.mynewclass{
+		left:4px;
+	}
+	.search-folderfile-tooltip{margin:-8px 0 0 7px !important;}
+	.sub-folderfiles-tooltip{margin:-10px 0 0 10px !important;}
+	.nested-folderfiles-tooltip{margin:-9px 0 0 3px !important;}
+}
+
+@media only screen and  (min-width : 660px) and (max-width: 720px) {
+	.search-folderfile-tooltip{margin:-8px 0 0 7px !important;}
+	.sub-folderfiles-tooltip{margin:-10px 0 0 5px !important;}
+	.nested-folderfiles-tooltip{margin:-38px 0 0 31px !important;}
+}
+@media only screen and  (min-width : 650px) and (max-width: 659px) {
+	.sub-folderfiles-tooltip{margin:-20px 0 0 0px !important}
+	.nested-folderfiles-tooltip{margin:-30px 0 0 25px !important}
+	
+}
+@media only screen and  (min-width : 650px) and (max-width: 838px) {
+	.nested-folderfiles-tooltip{margin:-13px 0 0 12px  !important;}
+
+	
+}
+#box .addclass {
+	background-color: rgb(51, 153, 255);
+	cursor: default;
+	color: #FFFFFF;
+}
+#box #select_resource {
+	z-index: 99999;
+	display: none;
+	width: 76.5%;
+	border: 0px;
+	display:none;
+}
+#box #search_query_box {
+	width: inherit;
+	max-height: 300px;
+	margin-top:-28px;
+	background-color: #FFFFFF;
+	overflow-x: hidden;
+	border-bottom: 1px solid #0387B8;
+	border-right: 1px solid #0387B8;
+	border-left: 1px solid #0387B8;
+	-webkit-box-shadow: 0px 10px 20px -3px rgba(156,156,156,1);
+	-moz-box-shadow: 0px 10px 20px -3px rgba(156,156,156,1);
+	box-shadow: 0px 10px 20px -3px rgba(156,156,156,1);
+	position:absolute;
+	z-index:2;
+}
+#box .listOfFolderTable {
+	border-collapse: collapse;
+	padding: 2px 5px 2px 5px;
+	border: 0px;
+	list-style: none;
+}
+#box .listOfFilesFolderSelected {
+	word-wrap: break-word;
+	border: 1px solid #FFFFFF;
+	width: 100%;
+	padding: 5px 2px 5px 2px;
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script type="text/javascript" src="https://d24wgzqqegxpap.cloudfront.net/api/js/porthole.min.js"></script>
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/operations1.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/select2.min.js"></script>
+<script>
+	integration_app_icon_url="https://d24wgzqqegxpap.cloudfront.net/api/images/box/box.png";
+	clientAppRevokeMsg = '<p class="integrationAuthMsg"><span class="info-icon" title=""> &nbsp;</span><span>We are facing difficulty while accessing your Box account. Please click on Add to authorize.</span></p>';
+	webhookMessageBanner = '<p class="integrationAuthMsg"><span class="info-icon" title=""> &nbsp;</span><span>This integration has been updated to ensure the notifications are received immediately after the trigger. To use the latest version, please click ADD to reauthorize and create new configurations. Reauthorization will not impact your current configurations.</span></p>';
+	var old_main_folders=[];
+	var old_sub_folders=[];
+	var old_sub_nested_folders=[];
+	var source_id_old="";
+	var subsource_id_old = "";
+	var nested_subsource_id_old ="";
+	var application_id="6";
+	var instance_uuid="";
+	var room_id = "";
+	var selectedPoolingSourceId = "";
+	var selected_source_id="0";
+	var selectedSource_id_old=0;
+  	var selected_subfolder_id ="0";
+	var selected_subfolder2_id = "0";
+	var selectedSourceId = "0";
+    var searchItemId="0";
+	var eventsMatchFlag = true;
+	var configFlag = false;
+	var folderFlag = false;
+	var itemslist = [];
+	var subfolders = "";
+	var sublevel2 = "";
+	var subfolderdata = [];
+	var isFile = false;
+	var isFile1 = false;
+	var isFile2 = false;
+	var isFile3 = false;
+	var offsetval_limit_main=0;
+	var offsetval_limit_sub=0;
+	var offsetval_limit_nested=0;
+	var sourceFound = false; //
+	var source_modified = false; // new//
+	var source_level  = "0";
+	var subsource_level = "0";
+	var nested_subsource_level = "0";
+	var search_box_level = "0";
+	var source_type = "0";
+	var serachfileid = "0";
+	var allSources ="";
+	var saveFlasgSearchFile = false;
+	var saveFlag = false;
+	var main_flag_more_folders=false;
+	var sub_flag_more_folders=false;
+	var nested_flag_more_folders=false;
+	var main_folders_changed_flag=false;
+	var sub_folders_changed_flag=false;
+	var nested_folders_changed_flag=false;
+	var selectedSource_id=0;
+	var total_count_main=0;
+	var total_count_sub=0;
+	var total_count_nested=0;	
+	var limit_main=0;
+	var limit_sub=0;
+	var limit_nested=0;
+	var selectedEvents = [];
+	var isWebhookConfig = true;
+	var isUpdateInstance = false;
+	var itemFlagFound=false; 
+	var editTestFlag=false;
+	var elements_old_main_folders=0;
+	var elements_old_sub_folders=0;
+	var elements_old_nested_folders=0;
+	appName = "Box";
+	postMessageToSpark = appName+" "+postMessageToSpark;
+	updateMessageToSpark= appName+" "+updateMessageToSpark;
+	removeMessageToSpark= appName+" "+removeMessageToSpark;
+	$(document).ready(function(){
+		application_auth_details_url="/api/applications/"+application_id;
+		token_url="/api/integrations/"+integration_id+"/authDetails";
+		save_spark_token_url="/api/clients/tokens";
+		save_app_token_url="/api/integrations/"+integration_id+"/appTokens";
+		get_app_token_url="/api/integrations/"+integration_id+"/appTokens";
+		configuration_settings_url="/api/integrations/"+integration_id+"/uiSettings";
+		save_configuration_settings_url="/api/integrations/instances";
+		update_configuration_settings_url="/api/integrations/instances/";
+		delete_instance_url="/api/integrations/instances/";
+		list_integration_instances_url="/api/integrations/instances";		
+		removeall_integration_instances_url="/api/integrations/instances";
+		delete_spark_token_url="/api/clients/tokens";
+		delete_integration_token_url="/api/integrations/"+integration_id+"/appTokens";
+		getSparkSpaceDetails = "/api/integrations/"+integration_id+"/getSparkSpaceDetailsBySpaceId";
+		$('#resources').val('');
+		$('#resources1').val('');$('#subfolders').val('');$('#subfolders1').val('');
+		$('#sub_folders').show();$('#sub_files').show();
+		$('#integration-form').hide();
+		action=action.toLowerCase();
+		if(action=="connect") {
+			formAction=="connect";
+			$("#integrations-block").hide();
+			$("#integration-form").hide();
+			validateIntegrationAppToken();
+		} else if(action=="disconnect") {
+			formAction="disconnect";
+			removeAllIntegrationInstances(formAction);
+		} else {
+			$("#search_file_folder_hiddent").val("");
+			var app_code =   gup(document.referrer, 'code');
+			if(app_code!="") {
+				generateIntegrationAppToken(app_code); 
+			} else {
+				validateIntegrationAppTokenDB();
+			}
+		} 
+		$("#rooms").select2();
+		$('#box-icon').attr("src", integration_app_icon_url);
+		$(".spark-icon").attr("src", spark_icon_url);
+		$("#box #rooms").on('change',function(){
+			room_modified=true;
+		});			
+		$("#box #submit-button").click(function (e){
+			e.preventDefault();
+			elements_old_main_folders=0;
+			elements_old_sub_folders=0;
+			elements_old_nested_folders=0;
+			old_main_folders=[];
+			old_sub_folders=[];
+			old_sub_nested_folders=[];
+			selectedEvents = [];
+			saveBoxInstance();
+		});
+		$("#cancel-button").click(function (e){
+			elements_old_main_folders=0;
+			elements_old_sub_folders=0;
+			elements_old_nested_folders=0;
+			old_main_folders=[];
+			old_sub_folders=[];
+			old_sub_nested_folders=[];
+			e.preventDefault();	
+			$(".search_file_folder").hide();
+			$('#integration-form').hide();
+			$('#integrations-block').show();
+			if(listResultData.length == 0) listIntegrations();
+			setTimeout(function(){
+				if(isBoxWebhookEnabled==false) $('.client-app-warning').show();
+			},400);
+			// ****
+			resize();
+		});
+		$("#displayName").keydown(function(e){
+			if(e.which == 13)
+			e.preventDefault();			
+		});
+		
+		$("#displayName").keydown(function(e){
+			if(e.which == 13)
+			e.preventDefault();			
+		});
+		
+		$('#box #add-config').click(function(e){
+			e.preventDefault();
+			elements_old_main_folders=0;
+			elements_old_sub_folders=0;
+			elements_old_nested_folders=0;
+			old_main_folders=[];
+			old_sub_folders=[];
+			old_sub_nested_folders=[];
+			main_flag_more_folders = false;
+			sub_flag_more_folders=false;
+			nested_flag_more_folders=false;
+			main_folders_changed_flag = false;
+	        sub_folders_changed_flag=false;
+	        nested_folders_changed_flag=false;
+			selected_source_id = "0";
+			selected_subfolder_id="0";
+			selected_subfolder2_id="0";
+			serachfileid="0";
+			$('.box_dropdownextramain').hide();
+			$('#subfolders').find("option:gt(0)").remove();
+			$("#search_file_folder").val("");
+			$("#search_file_folder_hiddent").val("");
+			$(".search_file_folder").hide();
+			$('#select2-rooms-container').html('Please select a space'); //
+			$('.items-loading').hide(); // 
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-subfolderconfig1-info").hide();
+			$(".edit-itemconfig-info").hide();
+			$(".edit-roomconfig-info").hide();
+			$('.subfolderSelection').hide();
+			$('.subfolderSelection1').hide();
+			$("#resources").html('<option value="0" hidden>Select Folders / Files</option><optgroup id="folders" label="Root Folders"></optgroup ><optgroup id="files" label="Root Files"></optgroup >');
+			$('#pooling-events').css("display","none");
+			$('#webhook-events').css("display","block");
+			$('#webhook-config').css("display","block");
+			$('#pooling-config').css("display","none");
+			isWebhookConfig = true;
+			isUpdateInstance = false;
+			formAction="add";			
+			if(listResultData.length != 0){
+				$("#submit-button").text("Add");
+				if(isClientAppTokenValid){
+					if(isBoxWebhookEnabled){
+						loadBoxForm();
+					}else{
+						setIntegrationAppAuthDetails(integration_id);
+					}
+				}else {
+					setIntegrationAppAuthDetails(integration_id);
+				}
+			}else{
+				$("#submit-button").text("Add Integration");				
+				validateIntegrationAppToken();				
+			};
+		});
+		$(document).on("click", ".same-config-yes" , function(e) {
+			isUpdateInstance = false;
+			$('#same-configuration').foundation('close');
+		});
+		$(document).on("click", ".same-config-no" , function(e) {
+			$('#same-configuration').foundation('close');
+			e.preventDefault();			
+			$('#integration-form').hide();
+			$('#integrations-block').show();
+			//listIntegrations(); //
+			resize();
+		});
+		$(document).on("click", ".close-modal" , function(e) {
+			e.preventDefault();			
+			$('#webhook-warning-modal').foundation('close');
+		});
+		$("#box #resources").on('change',function(){
+			
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-itemconfig-info").hide();
+			$(".edit-roomconfig-info").hide();
+			if($('#resources').val()!=0&&formAction=="update")
+				$(".edit-itemconfig-info").hide();
+			if(source_level=="file" || source_level=="folder" ) {
+				$('.subfolderSelection').hide();
+				$('.subfolderSelection1').hide();
+			}
+		});
+		$("#box #resources1").on('change',function(){
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-itemconfig-info").hide();
+			$(".edit-roomconfig-info").hide();
+			if($('#resources1').val()!=0&&formAction=="update")
+				$(".edit-itemconfig-info").hide();
+		});			
+		$("#box #rooms").on('change',function(){
+			if($('#rooms').val()!=0&&formAction=="update")
+				$(".edit-roomconfig-info").hide();
+		});	
+		$('#resources').change(function () {
+			
+			main_folders_changed_flag=true;
+			sub_folders_changed_flag=false;
+			nested_folders_changed_flag=false;
+		    old_sub_folders=[];
+			old_sub_nested_folders=[];
+			selected_source_id = "0";
+			selected_subfolder_id="0";
+			selected_subfolder2_id="0";
+			serachfileid="0";
+			offsetval_limit_sub="0";
+            offsetval_limit_nested="0";
+			search_box_level="0";
+			$(".search_file_folder").hide();
+			$("#search_file_folder_hidden").val("");
+			$("#search_file_folder").val("");
+			if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+			if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+			$('.subfolderSelection').hide();
+			$('.subfolderSelection1').hide();
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-subfolderconfig1-info").hide();
+			var itemData = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"];
+			offsetval_limt_main = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"].offset;
+			var total_count_val = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"].total_count;
+			$("#folderNote").show();
+			for(var j=0;j<old_main_folders.length;j++)
+			{
+				$.each(old_main_folders[j], function(id,obj){
+				if($('#resources').val()==obj.id && obj.type=="folder"){
+						main_folders_changed_flag=false;
+						source_level  = "folder";
+						isFile = false;
+						var jsonObject={};
+						jsonObject["integrationId"] = integration_id;
+						jsonObject["userId"] = user_id;
+						jsonObject["sourceId"] = $('#resources').val();
+						jsonObject["offset"] = offsetval_limit_sub;
+						jsonString=JSON.stringify(jsonObject);
+						//getNestedFolderListChecking(jsonString);
+						getNestedFolderList(jsonString);
+						$("#folderNote").show();
+						return false;
+					}else if($('#resources').val()==obj.id && obj.type=="file"){
+						isFile = true;
+						//source_level = "file";
+						$("#folderNote").hide();
+						if($("#resources").val() == '0'){
+							source_level  = "0";
+							subsource_level= "0"; 
+							nested_subsource_level= "0";
+						}else{
+							source_level = "file";
+							subsource_level  = "0";
+							nested_subsource_level= "0"; 
+						
+						} 
+						
+						$('.subfolderSelection').hide();
+						$('.subfolderSelection1').hide();					
+						$('#subfolders')[0].options.length = 1;
+						return false;
+					}
+					else{
+					source_level  = "0";
+					$("#folderNote").show();
+				}
+			});
+			}
+			if($('#resources').val()==0 || isFile==false ) {
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',false);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',false);
+			}else {
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',true);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',true);
+			}
+			resize();
+		});
+			$('#resources1').change(function () {
+			$("#search_file_folder_hidden").val("");
+			$("#search_file_folder").val("");
+			$(".search_file_folder").hide();
+			if($('#resources1').val()=="all" || $('#resources1').val()=="rootfolders" || $('#resources1').val()=="rootfiles"){
+				$('.subfolderSelection').hide();
+				$('.subfolderSelection1').hide();
+			}
+			$('#folders').show();
+			$('#files').show();
+			$('.subfolderSelection').hide();
+			$('.subfolderSelection1').hide();
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-subfolderconfig1-info").hide();
+			var itemData = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"];	
+			$.each(itemData["entries"], function(id,obj){
+					if(obj.type=="folder"){
+						if($('#resources1').val()==obj.id && $('#resources1').val() != '0'){
+							source_level  = "folder";
+							isFile = false;
+							var jsonObject={};
+							jsonObject["integrationId"] = integration_id;
+							jsonObject["userId"] = user_id;
+							jsonObject["sourceId"] = $('#resources1').val();
+							jsonString=JSON.stringify(jsonObject);
+							getNestedFolderList(jsonString);
+							return false;
+						}else{
+							if($('#resources1').val() == '0'){
+								source_level  = "0";
+							}else if($('#resources1').val()==obj.id){
+								source_level  = "file";
+								isFile = true;
+								return false
+							}
+						}
+					}else {
+						isFile = true;
+						source_level = "file";
+						subsource_level = "0";
+						nested_subsource_level = "0";
+						$('.subfolderSelection').hide();
+						$('.subfolderSelection1').hide();					
+						$('#subfolders')[0].options.length = 1;
+					} 
+			});
+			resize();
+		});
+	$(".search-btn").on('click',function(){
+		$(".edit-subfolderconfig1-info").hide();
+		searchFunctionality();
+	});
+	$("#box_dropdownextramainfolders").on('click',function(event){
+		event.preventDefault();
+		if(total_count_main > offsetval_limit_main){
+			$('.box_dropdownextramain').show();
+		}else{
+			$('.box_dropdownextramain').hide();
+		}	
+		$('#resources').find("option:gt(0)").remove();
+		
+		main_flag_more_folders=true;
+		sub_flag_more_folders=false;
+		nested_flag_more_folders=false;
+		$("#resources").val(0);
+		old_sub_folders=[];
+		old_sub_nested_folders=[];
+		$(".subfolderSelection").hide();
+		$(".subfolderSelection1").hide();
+		$(".search_file_folder").hide();
+		selected_subfolder_id="0";
+		selected_source_id="0";
+		selected_subfolder2_id="0";
+		serachfileid="0";
+		offsetval_limit_sub=0;
+		offsetval_limit_nested=0;
+		var jsonObject2={};
+		jsonObject2["integrationId"] = integration_id;
+		jsonObject2["userId"] = user_id;
+		jsonObject2["sourceId"] = "0";
+		jsonObject2["offset"] = offsetval_limit_main;
+		jsonString=JSON.stringify(jsonObject2);
+		getMainFolderList(jsonString);
+		
+	});
+	$("#box_dropdownextrafolders").on('click',function(event){
+		sub_flag_more_folders=true;
+		$('#subfolders').find("option:gt(0)").remove();
+		$("#subfolders").val(0);
+		//	sub_flag_more_folders = true;
+		nested_flag_more_folders=false;
+		$(".search_file_folder").hide();
+		selected_subfolder_id="0";
+		selected_subfolder2_id="0";
+		serachfileid="0";
+		//old_sub_folders=[];
+		old_sub_nested_folders=[];
+		$(".subfolderSelection1").hide();
+		if(total_count_sub > offsetval_limit_sub){
+			$('.box_dropdownextra').show();
+		}else{
+			$('.box_dropdownextra').hide();
+		}
+		var jsonObject2={};
+		jsonObject2["integrationId"] = integration_id;
+		jsonObject2["userId"] = user_id;
+		jsonObject2["sourceId"] = $('#resources').val();
+		jsonObject2["offset"] = offsetval_limit_sub;
+		jsonString=JSON.stringify(jsonObject2);
+		getNestedFolderList(jsonString);
+		event.preventDefault();
+	});
+	$("#box_dropdownextrafolders11").on('click',function(event){
+		$('#subfolders1').find("option:gt(0)").remove();
+		$("#subfolders1").val(0);
+		selected_subfolder2_id="0";
+		serachfileid="0";
+		nested_flag_more_folders=true;
+	    $(".search_file_folder").hide();
+		if(total_count_nested > offsetval_limit_nested){
+			$('.box_dropdownextra1').show();
+		}else{
+			$('.box_dropdownextra1').hide();
+		}
+	 	
+		var jsonObject2={};
+		jsonObject2["integrationId"] = integration_id;
+		jsonObject2["userId"] = user_id;
+		jsonObject2["sourceId"] = $('#subfolders').val();
+		jsonObject2["offset"] = offsetval_limit_nested;
+		jsonString=JSON.stringify(jsonObject2);
+		getSecondNestedFolderList(jsonString);
+		event.preventDefault();
+	});
+	$(document).click(function() {
+		$("#select_resource").hide();
+		$("#search_query_box").html("");
+	});
+	$(document).on('mouseenter','.listOfFilesFolderSelected',function(){
+		$(".listOfFilesFolderSelected").removeClass("addclass");
+		$(this).addClass("addclass");
+	});
+	
+	$(document).on('mouseleave','.listOfFilesFolderSelected',function(){
+		$(this).removeClass("addclass");
+	});
+	$("#search_file_folder").on("keydown",function(e){
+	       serachfileid="0";
+	      $(".search-items-loading").hide();
+		if(e.keyCode == 13){
+			$("#create1").prop("disabled", false);
+			$('#update1').prop('disabled',false);
+			$("#folderNote").show();
+		}else if(e.keyCode==35 || e.keyCode==36 || e.keyCode==37 || e.keyCode==39 || e.keyCode==38 || e.keyCode==40 || e.keyCode == 17 || e.keyCode == 16 || e.keyCode == 18 || e.keyCode == 9){
+			if($('#create1').is(':disabled')){
+				$('#create1').prop('checked', false);
+				$('#update1').prop('checked', false);
+				$("#create1").prop("disabled", true);
+				$('#update1').prop("disabled", true);
+				$("#folderNote").hide();
+			}else{
+				$("#create1").prop("disabled", false);
+				$('#update1').prop("disabled", false);
+				$("#folderNote").show();
+			}
+		}else{
+			$("#create1").prop("disabled", false);
+			$('#update1').prop("disabled", false);
+			$("#folderNote").show();
+		}
+	});	
+	$(document).on('click',".listOfFilesFolderSelected",function(){
+		selectSearchItems(this);
+	});
+	$("#search_file_folder").keydown(function(e){
+		if(e.keyCode == 13 && !($("#select_resource").is(":visible"))){
+			e.preventDefault();
+			$(".edit-subfolderconfig1-info").hide();
+			searchFunctionality();
+		}else if(e.keyCode != 13 && e.keyCode != 38 && e.keyCode != 40){
+			$(".listOfFilesFolderSelected").removeClass('addclass');
+			$("#select_resource").hide();
+		}
+	});
+	
+	$(document).keydown(function(e){
+		if(e.keyCode == 38 && $("#select_resource").is(":visible")){
+			var list = $(".listOfFilesFolderSelected");
+			var he = 0;
+			var xhe = 0;
+			for(var i=0;i<list.length;i++){
+				if($(list[i]).hasClass("addclass")){
+					xhe=$(list[i]).height();
+					break;
+				}
+				he+=$(list[i]).height();
+			}
+			if(i>0){
+				var nextelement = $(".addclass").prev();
+				$(".listOfFilesFolderSelected").removeClass('addclass');
+				$(nextelement).addClass('addclass');
+				$("#search_query_box").scrollTop(he-(xhe+15));
+			}
+		}else if(e.keyCode == 40 && $("#select_resource").is(":visible")){
+			var list = $(".listOfFilesFolderSelected");
+			if($(".addclass").length == 0){
+				$(list[0]).addClass("addclass");
+			}else{
+				var he = 0;
+				for(var i=0;i<list.length;i++){
+					if($(list[i]).hasClass("addclass"))
+						break;
+					he+=$(list[i]).height();
+				}
+				if(i<list.length-1){
+					var nextelement = $(".addclass").next();
+					$(".listOfFilesFolderSelected").removeClass('addclass');
+					$(nextelement).addClass('addclass');				
+					$("#search_query_box").scrollTop(he+15);
+				}
+			}
+		}else if(e.keyCode == 13 && $("#select_resource").is(":visible")){
+			e.preventDefault();
+			var searchvaluebox = $(".addclass").html();
+			var searchidbox = $(".addclass").attr("id");
+			var typebox = $(".addclass").attr("alt");
+			if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+			if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+			if(typebox == 'file'){
+				$('#create1').attr('disabled','disabled');
+				$('#update1').attr('disabled','disabled');
+				$("#folderNote").hide();
+			}else{
+				$('#create1').removeAttr('disabled');
+				$('#update1').removeAttr('disabled');
+				$("#folderNote").show();
+			}
+			$("#search_file_folder_hidden").val(searchidbox);
+			$("#search_file_folder").val(searchvaluebox);
+			$("#select_resource").hide();
+			search_box_level = typebox
+			serachfileid = searchidbox;
+		}
+	});
+	
+	
+	$('#resources').click(function(){
+	    if(total_count_main>offsetval_limit_main)
+			$('.box_dropdownextramain').show();
+			  
+	});
+	$('#subfolders').click(function(){
+	    if(total_count_sub>offsetval_limit_sub)
+			$('#box_dropdownextrafolders').show();
+			  
+	});
+	$('#subfolders1').click(function(){
+	   if(total_count_nested>offsetval_limit_nested)
+			$('#box_dropdownextrafolders11').show();
+	});
+	$('#subfolders').change(function(){
+		sub_folders_changed_flag=true;
+		nested_folders_changed_flag=false;
+		selected_subfolder2_id="0";
+		serachfileid="0";
+		nested_folders_changed_flag=true;
+		old_sub_nested_folders=[];
+	    offsetval_limit_nested="0";
+		$(".search_file_folder").hide();
+		$("#search_file_folder_hidden").val("");
+		$("#search_file_folder").val("");
+		serachfileid="0";
+		search_box_level = "0";
+		$('#nestedsubfolders').show();
+		$('#nestedsubfiles').show();
+		$('.subfolderSelection1').hide();
+		$(".edit-subfolderconfig-info").hide();
+		$(".edit-subfolderconfig1-info").hide();
+		$("#folderNote").show();
+		if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+		if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+			if($('#subfolders').val()!=0&&formAction=="update")
+			$(".edit-itemconfig-info").hide();
+			var foldermatchflag=false;
+			for(var j=0;j<old_sub_folders.length;j++)
+			{
+			 $.each(old_sub_folders[j], function(id,obj){
+				if($('#subfolders').val() == obj.id && obj.type=="folder" ){
+					isFile2 = false;
+					subsource_level = "folder";
+					var jsonObject={};
+					jsonObject["integrationId"] = integration_id;
+					jsonObject["userId"] = user_id;
+					jsonObject["sourceId"] = $("#subfolders").val();
+					jsonObject["offset"] = offsetval_limit_nested;
+					jsonString=JSON.stringify(jsonObject);
+					if(isWebhookConfig) 
+					getSecondNestedFolderList(jsonString);
+					foldermatchflag=true;
+					$("#folderNote").show();
+					return false;
+				}else if($('#subfolders').val() == obj.id && obj.type=='file'){
+					isFile2 = true;
+					if($("#subfolders").val() == '0'){
+						subsource_level= "0"; nested_subsource_level= "0";
+					}else{
+						subsource_level  = "file";nested_subsource_level= "0"; 
+						
+					} 
+					$('.subfolderSelection1').hide();
+					$('#subfolders1')[0].options.length = 1;
+					$("#folderNote").hide();
+					return false;
+				}else
+				{
+				    
+					subsource_level= "0";
+					$("#folderNote").show();
+					}
+			});
+			if($('#subfolders').val()==0 ||  isFile2==false){
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',false);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',false);
+			}else {
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',true);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',true);
+				
+			}
+			 if(foldermatchflag)
+			 return false; 
+			}
+		
+			resize();
+		});
+	$('#subfolders1').change(function(){
+	//$('#subfolders1').find("option:gt(0)").remove();
+	    nested_folders_changed_flag=true;
+		search_box_level = "0";
+		$(".search_file_folder").hide();
+		$("#search_file_folder_hidden").val("");
+		$("#search_file_folder").val("");
+		$(".edit-subfolderconfig-info").hide();
+		$(".edit-subfolderconfig1-info").hide();
+		$("#folderNote").show();
+		if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+		if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+		serachfileid="0";
+			if($('#subfolders1').val()!=0&&formAction=="update")
+			$(".edit-itemconfig-info").hide();
+			for(var j=0;j<old_sub_nested_folders.length;j++)
+			{
+			$.each(old_sub_nested_folders[j], function(id,obj){
+				if($('#subfolders1').val() == obj.id && obj.type=="folder" ){
+					isFile3 = false;
+					nested_subsource_level = "folder";
+					$(".search_file_folder").show();
+					$("#folderNote").show();
+					return false;
+				}else if($('#subfolders1').val() == obj.id && obj.type=="file"){
+					$("#folderNote").hide();
+					isFile3 = true;
+					if($('#subfolders1').val() !=0 ) 
+						nested_subsource_level = "file";
+					else
+						nested_subsource_level = "0";
+					$(".search_file_folder").hide();
+					$("#search_file_folder_hidden").val("");
+					$("#search_file_folder").val("");
+					return false;
+				}else
+				   nested_subsource_level = "0";
+					$("#folderNote").show();
+			});
+			}
+			if($('#subfolders1').val()==0 ||  isFile3==false){
+			//	$('#create1').prop('disabled',false);		
+			//  $('#update1').prop('disabled',false);	
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',false);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',false);				
+			}else {
+				if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+				$('#create1').prop('disabled',true);
+				if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+				$('#update1').prop('disabled',true);
+			}
+			resize();
+		});
+		$(document).on("click", "#box #instance-list-block .edit-config" , function() {
+			$("#submit-button").prop("disabled", true);
+			serachfileid="0";
+			elements_old_main_folders=0;
+			elements_old_sub_folders=0;
+			elements_old_nested_folders=0;
+			old_main_folders=[];
+			old_sub_folders=[];
+			old_sub_nested_folders=[];
+			main_flag_more_folders = false;
+			sub_flag_more_folders=false;
+			nested_flag_more_folders=false;
+			main_folders_changed_flag = false;
+	        sub_folders_changed_flag=false;
+	        nested_folders_changed_flag=false;
+			$('.box_dropdownextramain').hide();
+			$("#search_file_folder").val("");
+			$("#search_file_folder_hiddent").val("");
+			$('#select2-rooms-container').html('Please select a space'); //		
+			$(".edit-subfolderconfig-info").hide();
+			$(".edit-subfolderconfig1-info").hide();
+			$(".edit-itemconfig-info").hide();
+			$(".edit-roomconfig-info").hide();
+			$('#sub_folders').show();$('#sub_files').show();
+		    $('.subfolderSelection').hide();
+		    $('.subfolderSelection1').hide();
+			$(".search_file_folder").hide();
+			$("#resources").html('<option value="0">Select Folders / Files</option><optgroup id="folders" label="Root Folders"></optgroup ><optgroup id="files" label="Root Files"></optgroup >');
+			if(isBoxWebhookEnabled==false){
+				$('.client-app-warning').hide();
+			}
+			isUpdateInstance = true;
+			source_level  = "0";
+			subsource_level = "0";
+			nested_subsource_level = "0";
+			search_box_level = "0";
+			$('#create1').prop("disabled",false);
+			$('#update1').prop("disabled",false);
+			formAction="update";
+			source_modified=false;
+			room_modified=false;
+			$("#submit-button").text("Save");
+			instanceId=this.id;
+			
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+				}
+			});
+			selected_room_id=instanceData.channelId;
+			room_id_old = instanceData.channelId;
+			instance_uuid = instanceData.instanceUuid;
+			if(instanceData.messageFormat == "Box Webhook"){ 
+				isWebhookConfig = true;
+				
+				$('#resources')[0].options.length = 1;
+				$('#pooling-events').css("display","none");
+				$('#webhook-events').css("display","block");
+				$('#pooling-config').css("display","none");
+				$('#webhook-config').css("display","block");
+			}else {
+				isWebhookConfig = false;
+				
+				$('#resources1')[0].options.length = 4;
+				$('#pooling-config').css("display","block");
+				$('#webhook-config').css("display","none");
+				$('#pooling-events').css("display","block");
+				$('#webhook-events').css("display","none"); 
+			}
+			var config=JSON.parse(instanceData.configJson);
+			selected_source_id=config.source_id;
+			selected_subfolder_id=config.sub_source_id;
+			selected_subfolder2_id=config.nested_sub_source_id;
+			selectedSource_id_old = config.selected_source_id;
+			serachfileid = config.search_source_id;
+			source_type = config.source_type;
+			var jsonObject2={};
+			jsonObject2["integrationId"] = integration_id;
+			jsonObject2["userId"] = user_id;
+			jsonObject2["sourceId"] = config.source_id;
+			jsonString=JSON.stringify(jsonObject2);
+			loadBoxForm();
+			$('#displayName').val(config.displayName);
+            var events = config.events;
+		   if ($.isArray(events)) {
+				$.each(events, function(index, value) {
+					$("input[type=checkbox][value="+ value + "]").prop("checked", true);
+				});
+			} else {
+				$("input[type=checkbox][value="+ events+ "]").prop("checked", true);
+			}
+		});		
+	});
+	function selectSearchItems(currentData){
+		var searchvaluebox = $(currentData).html();
+		var searchidbox = $(currentData).attr("id");
+		var typebox = $(currentData).attr("alt");
+		if($('#create1').is(':checked')) $('#create1').prop('checked',false);
+		if($('#update1').is(':checked')) $('#update1').prop('checked',false);
+		if(typebox == 'file'){
+			$('#create1').attr('disabled','disabled');
+			$('#update1').attr('disabled','disabled');
+			$("#folderNote").hide();
+		}else{
+			$('#create1').removeAttr('disabled');
+			$('#update1').removeAttr('disabled');
+			$("#folderNote").show();
+		}
+		$("#search_file_folder_hidden").val(searchidbox);
+		$("#search_file_folder").val(searchvaluebox);
+		search_box_level = typebox;
+		serachfileid = searchidbox;
+		
+		
+		
+	}
+	function searchFunctionality(){
+		$(".search-items-loading").show();
+		if($("#search_file_folder").val()!=""){
+			var jsonObject={};
+			jsonObject["integrationId"] = integration_id;
+			jsonObject["userId"] = user_id;
+			jsonObject["searchPath"] = $("#search_file_folder").val();
+			jsonObject["searchItemId"] = $('#subfolders1').val();
+			jsonString=JSON.stringify(jsonObject);
+			$.ajax({
+				url: configuration_settings_url,
+				async:true,
+				headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){
+					var fileLists = result['postSpecificIntegrationSettings']['searchResponse'];
+					var searchResult = '<ul class="listOfFolderTable">';
+					if(fileLists.length>0){
+						for(var i=0;i<fileLists.length;i++)
+							searchResult += '<li class="listOfFilesFolderSelected" alt="'+fileLists[i]['type']+'" id="'+fileLists[i]['id']+'">'+fileLists[i]['path']+'</li>';
+					}else{
+						searchResult = '<li class="listOfFilesFolderSelected" id="">No results found</li>'
+					}
+					searchResult += "</ul>";
+					$("#search_query_box").html(searchResult);
+					$("#select_resource").show();
+					$(".search-items-loading").hide();
+				},
+				error: function(xmlHttpRequest,error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   } else{
+						alert("We've experienced some difficulty. Try again.");
+					}
+					$(".search-items-loading").hide();
+				}
+			});
+		}else{
+			alert("Please enter folder/file name.");
+			$(".search-items-loading").hide();
+		}
+	}
+	
+	
+	
+	function validateIntegrationAppToken() {
+		$.ajax({url: get_app_token_url,
+			async:true,
+			headers: { 'userId': user_id },
+			type: "get",
+			success: function(result){
+				if(result.tokenResult.tokenId) {
+					validateIntegrationAppspecificToken();
+				} else {
+					setIntegrationAppAuthDetails(integration_id);
+				}
+			},
+			error:  function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function validateIntegrationAppspecificToken(){
+		$.ajax({
+			url: configuration_settings_url,
+			async: true,
+			headers: { 'userId': user_id },
+			success: function(result){
+					if(result["integrationSpecificSettings"]["isValidToken"] != undefined && result["integrationSpecificSettings"]["isValidToken"]==false ){
+						isClientAppTokenValid = false;
+						if(listResultData.length==0){
+							setIntegrationAppAuthDetails(integration_id);
+						}
+					}else{
+						if(result["integrationSpecificSettings"]["settings"]["isWebhookEnabled"]==false ){
+							setIntegrationAppAuthDetails(integration_id);
+						}else{
+							loadBoxForm();
+						}
+					}
+				},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   } else{
+				   alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function validateSpecificAppToken(app_code){
+		$.ajax({
+			url: configuration_settings_url,
+			async: true,
+			headers: { 'userId': user_id },
+			success: function(result){
+					if(result["integrationSpecificSettings"]["isValidToken"] != undefined && result["integrationSpecificSettings"]["isValidToken"]==false ){
+						isClientAppTokenValid = false;
+						if(app_code!="") getIntegrationAppTokenDetails(app_code);
+						else setIntegrationAppAuthDetails(integration_id);						
+						
+					}else if(result["integrationSpecificSettings"]["settings"]["isWebhookEnabled"]==false ){
+						isBoxWebhookEnabled = false;
+						if(app_code!="") getIntegrationAppTokenDetails(app_code);
+					}else {
+						isClientAppTokenValid = true;
+						listIntegrations();
+					}
+				},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   } else{
+				   alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function getListInstances(){
+		$.ajax({url: list_integration_instances_url+"?integrationId="+integration_id,
+			async:true,
+			headers: { 'userId': user_id },
+			success: function(result){
+			 instanceList = result;
+			 if(instanceList.length != 0 && instanceList.message == undefined){
+				listIntegrations();
+			 }else{
+				 loadBoxForm();
+			 } 
+			 // listIntegrations();
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }
+			}
+		});
+	}
+	function setIntegrationAppAuthDetails() {
+		var OAUTHURL    =   '';
+		var CLIENTID    =   '';
+		var TYPE        =   'code';
+		$.ajax({url: application_auth_details_url,
+			async:true,
+			headers: { 'userId': user_id },
+			success: function(result){
+				CLIENTID=result.clientId;
+				OAUTHURL= result.authorizationEndpoint				
+				OAUTHURL=OAUTHURL+'?client_id='+CLIENTID+'&response_type='+TYPE;
+				loginWithAuthDetails(OAUTHURL);	
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});		
+	}
+	function loginWithAuthDetails(oauthURL) {
+        isRedirect=true;
+		if(isRedirect) {
+			if(formAction=="add") {
+				window.top.location.href = oauthURL;
+			} else {
+				var authReqMsg ="";
+				authReqMsg+='<hr class="instance-hr"><div class="large-12 medium-12 columns instance-background">';
+				authReqMsg+='<div class="no-config-msg">You are not authorized to this integration. Click Add to continue.</div></div>';
+				$('#integrations-block').show();
+				$("#instance-list-block").html(authReqMsg);
+			}			
+		} else{
+			var win = window.open(oauthURL, "windowname1", 'width=600, height=600'); 
+			if(win){ 
+			}else{
+				alert(popblockedMessage); 
+				return false;
+			}
+			var pollTimer = window.setInterval(function() { 
+				try {
+					if (win.document.URL.indexOf("code") != -1) {
+						window.clearInterval(pollTimer);
+						var url =   win.document.URL;
+						accessCode = gup(url, 'code');
+						tokenType = gup(url, 'token_type');
+						expiresIn = gup(url, 'expires_in');
+						win.close();
+						getIntegrationAppTokenDetails(accessCode);
+					}
+				} catch(e) {	
+					console.log('error while getting authorization code..'+e);
+				}
+			}, 100);
+		}	
+    }
+	function getIntegrationAppTokenDetails(code) {
+		var jsonObject={};
+		jsonObject["integrationId"] = integration_id;
+		jsonObject["authSettings"] = {};
+		jsonObject["authSettings"]["code"] = code;
+		jsonString=JSON.stringify(jsonObject)
+		$.ajax({url: token_url,
+			async:true,
+			headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+			type: "POST",
+			data: jsonString,
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){
+				var tokenDetails=result["integrationSpecificAuthDetails"];
+				var jsonObject1={};
+				jsonObject1["applicationId"] = application_id;
+				jsonObject1["integrationId"] = integration_id;
+				jsonObject1["accessToken"] = tokenDetails.accessToken;
+				var tokenExpireTime="";
+				var refreshTokenExpireTime="";
+				jsonObject1["expires"] = tokenDetails.expires;
+				jsonObject1["refreshToken"] = tokenDetails.refreshToken;
+				jsonObject1["refreshExpires"] = tokenDetails.refreshExpires;
+				var jsonString=JSON.stringify(jsonObject1);
+				saveIntegrationAppToken(jsonString);
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function saveIntegrationAppToken(jsonData){
+		$.ajax({url: save_app_token_url,
+			async:true,
+			headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+			type: "POST",
+			data: jsonData,
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){
+				connectIntegration();
+				if(isClientAppTokenValid == false){
+					isClientAppTokenValid=true;
+					getListInstances();
+				}else {
+				 if(isBoxWebhookEnabled == false) getListInstances();
+				 else loadBoxForm();
+				   //listIntegrations();
+				} 
+			},
+			error: function(xmlHttpRequest, error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   } else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});	
+	}
+function getMainFolderList(jsonString){
+		$('#resources').find("option:gt(0)").remove();
+		var itemFlag=false;
+		$(".box_dropdownextramain").hide();
+		$(".items-loading").show();
+		$(".edit-subfolderconfig-info").hide();
+		 $("#folders").show();
+		$("#files").show();
+		 if(editTestFlag==true)
+		 {
+		   bool=false;
+		 }
+		 else{
+		  bool=true;
+		}		 
+		 
+		$.ajax({url: configuration_settings_url,
+		   		async:bool,
+				headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){
+				custom_result_main=result;
+				allSources = result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"]["entries"]; 
+				offsetval_limit_main=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].offset;
+				total_count_main=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].total_count;
+				limit_main=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].limit;
+				offsetval_limit_main=limit_main+offsetval_limit_main;
+				if(total_count_main > offsetval_limit_main){
+					$('.box_dropdownextramain').show();
+				}else{
+					$('.box_dropdownextramain').hide();
+				}
+				 	if(result["postSpecificIntegrationSettings"]["subSourceId"]!= undefined){
+						mainfolders = result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"]["entries"]; 
+						$(".items-loading").hide();
+					}else{
+						$("#integration-form").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+					var mainfolders_count=0;
+					var mainfiles_count = 0;
+					subsource_level = "0"; 
+					nested_subsource_level = "0";
+					search_box_level = "0";
+				if(mainfolders.length != 0){
+						elements_old_main_folders=elements_old_main_folders+mainfolders.length;
+				       old_main_folders.push(mainfolders);
+					 	for(var i=0;i<old_main_folders.length;i++)
+						{
+						$.each(old_main_folders[i], function(id,obj){
+							if(obj.type == "folder"){
+								mainfolders_count++;
+								$("#folders").append($('<option>').text(obj.name).attr('value',obj.id));
+								if(formAction=="update" && selected_source_id==obj.id){
+									source_level = "folder";
+									itemFlag=true;
+									itemFlagFound=true;
+								}
+							}else if(obj.type=="file"){
+								mainfiles_count++;
+								$("#files").append($('<option>').text(obj.name).attr('value',obj.id));
+								if(formAction=="update" && selected_source_id==obj.id){
+									$('#create1').prop("disabled",true);$('#create1').prop("checked",false);
+									$('#update1').prop("disabled",true);$('#update1').prop("checked",false);
+									itemFlag=true;
+									itemFlagFound=true;
+									source_level = "file";
+									subsource_level="0";
+								}
+							}
+							if(formAction=="update" && selected_source_id=="all"){
+								selected_source_id="0";
+								itemFlag=true;
+							}
+						});
+						
+						}
+					 	$('#box_dropdownextrafolders').hide();
+						$('#box_dropdownextrafolders11').hide();
+						if(formAction=="update" && itemFlag==false && main_flag_more_folders==false && main_folders_changed_flag==false && selected_source_id!=null){
+							offsetval_limit_main=custom_result_main["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].offset;
+							total_count_main=custom_result_main["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].total_count;
+							limit_main=custom_result_main["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].limit;
+							offsetval_limit_main = offsetval_limit_main+limit_main;
+							var jsonObject2={};
+							jsonObject2["integrationId"] = integration_id;
+							jsonObject2["userId"] = user_id;
+							jsonObject2["sourceId"] ="0";
+							jsonObject2["offset"] = offsetval_limit_main;
+							jsonString=JSON.stringify(jsonObject2);
+							if(total_count_main > offsetval_limit_main)
+							getMainFolderList(jsonString);
+						}
+						else if(itemFlag==true){
+						   $("#resources").val(selected_source_id);
+						}
+						else{
+							$("#resources").val(0);
+						}
+						resize();
+					}else{
+					    if(old_main_folders.length==0){
+						alert("no folders exists in in your box account");
+						$('.subfolderSelection').hide();
+						$(".box_dropdownextra").hide();
+						}
+					}
+					$("#submit-button").prop("disabled", false);
+					if(formAction=="update" && itemFlag ==false && selected_source_id!="0" && total_count_main==elements_old_main_folders){
+						$(".edit-itemconfig-info").show();
+						$("#resources").val(0);
+						$(".edit-subfolderconfig-info").hide();
+						$(".edit-subfolderconfig1-info").hide();
+					}
+						if(subsource_level=="folder" && formAction=="update" && isWebhookConfig){
+						var jsonObject2={};
+						jsonObject2["integrationId"] = integration_id;
+						jsonObject2["userId"] = user_id;
+						jsonObject2["sourceId"] ="selected_source_id";
+						jsonObject2["offset"] = "0";
+						jsonString=JSON.stringify(jsonObject2);
+						$("#submit-button").prop("disabled", true);
+						getNestedFolderList(jsonString);
+					}
+					if(subsource_level=="file")
+						$("#folderNote").hide();
+					else
+						$("#folderNote").show();
+					
+					resize();
+				},
+				error: function(xmlHttpRequest,error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   } else{
+						$(".subfolderSelection").hide();
+						$(".subfolderSelection1").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+				}	
+		});
+	}
+	function getNestedFolderList(jsonString){
+		$('#subfolders').find("option:gt(0)").remove();
+		var itemFlag=false;
+   		console.log("sub_flag_more_folders"+sub_flag_more_folders);
+		$(".box_dropdownextra").hide();
+		$(".subitems-loading").show();
+		$(".edit-subfolderconfig-info").hide();
+		$("#sub_folders").show();
+		$("#sub_files").show();
+		$.ajax({url: configuration_settings_url,
+				async:true,
+				headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){
+				custom_result=result;
+				allSources = result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"]["entries"]; 
+				offsetval_limit_sub=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].offset;
+				total_count_sub=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].total_count;
+				limit_sub=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].limit;
+				offsetval_limit_sub=limit_sub+offsetval_limit_sub;
+				console.log("getNestedFolderListChecking :::");
+				console.log("offsetval_limit_sub :::"+offsetval_limit_sub);
+				console.log("total_count_sub :::"+total_count_sub);
+				console.log("limit_sub :::"+limit_sub);
+				console.log("total_count_sub > offsetval_limit_sub ::"+total_count_sub > offsetval_limit_sub);
+				console.log(0 < offsetval_limit_sub);
+				console.log("1221 subfolder offsetval_limit_sub "+offsetval_limit_sub +"total_count_sub "+total_count_sub);
+				if(total_count_sub > offsetval_limit_sub){
+					$(".box_dropdownextra").show();
+					}else{
+						$(".box_dropdownextra").hide();
+					}
+					console.log(0 < offsetval_limit_sub);
+				 	if(result["postSpecificIntegrationSettings"]["subSourceId"]!= undefined){
+						subfolders = result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"]["entries"]; 
+						$(".subitems-loading").hide();
+					}else{
+						$("#integration-form").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+					console.log(".........................");
+					// $('#subfolders')[0].options.length = 1;	
+					var subfolders_count=0;
+					var subfiles_count = 0;
+					subsource_level = "0"; 
+					nested_subsource_level = "0";
+					search_box_level = "0";
+					console.log("outer_old_sub_folders"+old_sub_folders);
+					// offsetval_limit_nested=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].offset;
+					if(subfolders.length != 0){
+						console.log("subfolders.length != 0");
+						elements_old_sub_folders=elements_old_sub_folders+subfolders.length;
+						old_sub_folders.push(subfolders);
+						console.log("old_sub_folders "+old_sub_folders);
+					    console.log("old_sub_folders length "+old_sub_folders.length);
+						console.log("subfolders length "+subfolders.length);
+						console.log("subfolders  "+subfolders);
+						
+						for(var i=0;i<old_sub_folders.length;i++)
+						{
+						 console.log("old_sub_folders[i] "+old_sub_folders[i])
+						$.each(old_sub_folders[i], function(id,obj){
+								console.log("selected_subfolder_id  ::"+selected_subfolder_id);
+							if(obj.type == "folder"){
+								subfolders_count++;
+								$("#sub_folders").append($('<option>').text(obj.name).attr('value',obj.id));
+								console.log("appending the sub folders");
+								if(formAction=="update" && selected_subfolder_id==obj.id){
+									console.log("selected_subfolder_id  ::"+selected_subfolder_id);
+									itemFlag=true;
+									subsource_level = "folder";
+								}
+							}else if(obj.type=="file"){
+								subfiles_count++;
+								$("#sub_files").append($('<option>').text(obj.name).attr('value',obj.id));
+								if(formAction=="update" && selected_subfolder_id==obj.id){
+									console.log("EDIT :::: source_level 979-- > "+source_level);
+									$('#create1').prop("disabled",true);$('#create1').prop("checked",false);
+									$('#update1').prop("disabled",true);$('#update1').prop("checked",false);
+									itemFlag=true;
+									subsource_level = "file";
+								}   
+							}
+							if(formAction=="update" && selected_subfolder_id=="all"){
+								selected_subfolder_id=0;
+								itemFlag=true;
+							}
+						});
+						
+						}
+						if(subfolders_count==0) 
+						$("#sub_folders").hide();
+						if(subfiles_count==0)
+						$("#sub_files").hide();
+						$('.subfolderSelection').show();
+						$('#box_dropdownextrafolders').hide();
+						$('#box_dropdownextrafolders11').hide();
+						console.log("itemFlag  "+itemFlag);
+						console.log("sub_flag_more_folders "+sub_flag_more_folders+"sub_folders_changed_flag"+sub_folders_changed_flag+"main_flag_more_folders "+main_flag_more_folders+"main_folders_changed_flag "+main_folders_changed_flag);
+						if(formAction=="update" && itemFlag==false && sub_flag_more_folders==false && sub_folders_changed_flag==false && main_flag_more_folders==false && main_folders_changed_flag==false && selected_subfolder_id!=null){
+							console.log("update");
+							offsetval_limit_sub=custom_result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].offset;
+							total_count_sub=custom_result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].total_count;
+							limit_sub=custom_result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].limit;
+							offsetval_limit_sub = offsetval_limit_sub+limit_sub;
+							var jsonObject2={};
+							jsonObject2["integrationId"] = integration_id;
+							jsonObject2["userId"] = user_id;
+							jsonObject2["sourceId"] = $('#resources').val();
+							jsonObject2["offset"] = offsetval_limit_sub;
+							jsonString=JSON.stringify(jsonObject2);
+							console.log("total_count_sub > offsetval_limit_sub "+(total_count_sub > offsetval_limit_sub));
+							//old_sub_folders=[];
+							if(total_count_sub > offsetval_limit_sub)
+							getNestedFolderList(jsonString);
+						}
+						else{
+						   $("#subfolders").val(selected_subfolder_id);
+						}
+						resize();
+					}
+					else{
+					    if(old_sub_folders.length==0){
+						$('.subfolderSelection').hide();
+						$(".box_dropdownextra").hide();
+						}
+						else{
+						$('.subfolderSelection').show();
+						$(".box_dropdownextra").hide();
+						
+						}
+						
+
+						
+						//$(".edit-subfolderconfig-info").show();
+					}
+					$("#submit-button").prop("disabled", false);
+					if(formAction=="update" && itemFlag ==false && selected_subfolder_id!="0" && total_count_sub==elements_old_sub_folders){
+						 /* selected_subfolder_id = "0"; */
+						$(".edit-subfolderconfig-info").show();
+						 $("#subfolders").val(0);
+						$(".edit-subfolderconfig1-info").hide();
+					}
+					// $("#subfolders").val(selected_subfolder_id);
+					console.log("offsetval_limit_sub "+offsetval_limit_sub);
+					//console.log("offset "+offset);
+					if(subsource_level=="folder" && formAction=="update" && isWebhookConfig){
+						var jsonObject2={};
+						jsonObject2["integrationId"] = integration_id;
+						jsonObject2["userId"] = user_id;
+						jsonObject2["sourceId"] = selected_subfolder_id;
+						jsonObject2["offset"] = "0";
+						jsonString=JSON.stringify(jsonObject2);
+						$("#submit-button").prop("disabled", true);
+						getSecondNestedFolderList(jsonString);
+					}
+					if(subsource_level=="file")
+						$("#folderNote").hide();
+					else
+						$("#folderNote").show();
+					
+					/* selected_subfolder_id="0"; */
+					resize();
+				},
+				error: function(xmlHttpRequest,error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   } else{
+						console.log("getNestedFolderList :: dont load");
+						$(".subfolderSelection").hide();
+						$(".subfolderSelection1").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+				}	
+		});
+	}
+	function getSecondNestedFolderList(jsonString){
+	$('#subfolders1').find("option:gt(0)").remove();
+	console.log("getSecondNestedFolderList");
+		nested_subsource_level = "0";
+		search_box_level = "0";
+		$(".box_dropdownextra1").hide();
+		var itemFlag=false;	
+		$(".subitems-loading1").show();
+		$(".edit-subfolderconfig-info").hide();
+		$(".edit-subfolderconfig1-info").hide();
+		$.ajax({url: configuration_settings_url,
+				async:true,
+				headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){
+				     custom_result1=result;
+				    allSources = result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"]["entries"]; 
+					offsetval_limit_nested=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].offset;
+					total_count_nested=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].total_count;
+					limit_nested=result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].limit;
+					offsetval_limit_nested=limit_nested+offsetval_limit_nested;
+					console.log("getSecondNestedFolderListChecking :::");
+					console.log("offsetval_limit_nested :::"+offsetval_limit_nested);
+					console.log("total_count_nested :::"+total_count_nested);
+					console.log("limit_nested :::"+limit_nested);
+					console.log("total_count_nested > offsetval_limit_nested ::"+total_count_nested > offsetval_limit_nested);
+					console.log(0 < offsetval_limit_nested);
+					console.log("1397 offsetval_limit_nested "+offsetval_limit_nested +"total_count_nested "+total_count_nested);
+					if(total_count_nested > offsetval_limit_nested){
+						$(".box_dropdownextra1").show();
+						//constructSubLevels(result);
+					}else{
+					
+						$(".box_dropdownextra1").hide();
+					}
+						
+				  
+					
+					if(result["postSpecificIntegrationSettings"]["subSourceId"]!= undefined){
+					console.log("success function");
+						sublevel2 = result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"]["entries"]; 
+						console.log("sublevel2"+sublevel2);
+						$(".subitems-loading1").hide();
+					}else{
+						$("#integration-form").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+					$('#subfolders1')[0].options.length = 1;
+						var nestedfolders_count=0;
+						var nestedfiles_count=0;
+						
+					//	offsetval_limit_nested =result["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].offset;
+						
+						
+						if(sublevel2.length != 0){
+							elements_old_nested_folders=elements_old_nested_folders+sublevel2.length;
+							old_sub_nested_folders.push(sublevel2);
+							console.log("old_sub_nested_folders "+old_sub_nested_folders);
+							console.log("old_sub_nested_folders length "+old_sub_nested_folders.length);
+							console.log("subfolders length "+subfolders.length);
+							console.log("sublevel2  "+sublevel2);
+							for(var i=0;i<old_sub_nested_folders.length;i++)
+							{
+							console.log("ifblock");
+							console.log("selected_subfolder2_id if "+selected_subfolder2_id);
+							
+							$.each(old_sub_nested_folders[i], function(id,obj){	
+								if(obj.type == "folder"){
+									nestedfolders_count++;
+									$("#nestedsubfolders").append($('<option>').text(obj.name).attr('value',obj.id));
+									if(formAction=="update" && selected_subfolder2_id==obj.id){
+										console.log("folder matched")
+										itemFlag = true;
+										nested_subsource_level = "folder";
+									}									
+								}else if(obj.type=="file"){
+									nestedfiles_count++;
+									$("#nestedsubfiles").append($('<option>').text(obj.name).attr('value',obj.id));
+									if(formAction=="update" && selected_subfolder2_id==obj.id){
+										itemFlag = true;
+										nested_subsource_level = "file";
+										$('#create1').prop("disabled",true);$('#create1').prop("checked",false);
+										$('#update1').prop("disabled",true);$('#update1').prop("checked",false);
+									}
+								}
+							});
+							}
+						
+						console.log("nestedfiles_count   "+nestedfiles_count);
+							if(nestedfolders_count== 0) 
+								$('#nestedsubfolders').hide();
+							else
+								$('#nestedsubfolders').show();
+							
+							if(nestedfiles_count== 0) 
+								$('#nestedsubfiles').hide();
+							else
+								$('#nestedsubfiles').show();
+							
+							$('.subfolderSelection1').show();
+							$('#box_dropdownextrafolders11').hide();
+							
+							if(formAction=="update" && itemFlag==false && nested_flag_more_folders==false &&  nested_folders_changed_flag==false && sub_flag_more_folders==false && sub_folders_changed_flag==false && selected_subfolder2_id!=null){
+								offsetval_limit_nested=custom_result1["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].offset;
+								total_count_nested=custom_result1["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].total_count;
+								limit_nested=custom_result1["postSpecificIntegrationSettings"]["subSourceId"]["item_collection"].limit;
+							    offsetval_limit_nested = offsetval_limit_nested+limit_nested;
+								var jsonObject2={};
+								jsonObject2["integrationId"] = integration_id;
+								jsonObject2["userId"] = user_id;
+								jsonObject2["sourceId"] = $('#subfolders').val();
+								jsonObject2["offset"] = offsetval_limit_nested;
+								jsonString=JSON.stringify(jsonObject2);
+								console.log("total_count_nested > offsetval_limit_nested "+(total_count_nested > offsetval_limit_nested));
+								//old_sub_folders=[];
+								if(total_count_nested > offsetval_limit_nested)
+								getSecondNestedFolderList(jsonString);
+							}
+							else{
+							console.log("selected_subfolder2_id "+selected_subfolder2_id)
+						       $("#subfolders1").val(selected_subfolder2_id);
+							}
+							resize();
+						}
+						else{
+							console.log("elseblock");
+							
+							if(old_sub_nested_folders.length==0)
+							{
+							 $('.subfolderSelection1').hide();
+							 $(".box_dropdownextra1").hide();
+							 }
+							 else{
+							 $('.subfolderSelection1').show();
+							 $(".box_dropdownextra1").hide();
+							 }
+						/*	if(selected_subfolder2_id!=0){
+								$(".edit-subfolderconfig1-info").show();
+							}else{
+								
+								$(".edit-subfolderconfig1-info").hide();
+							} */
+						} 
+						
+						console.log("elements_old_nested_folders "+elements_old_nested_folders);
+						console.log("old_sub_nested_folders.length "+old_sub_nested_folders.length);
+						console.log("total_count_nested"+total_count_nested);
+						console.log("before 1906");
+						if(formAction=="update" && itemFlag==false && selected_subfolder2_id!="0" && total_count_nested==elements_old_nested_folders){
+							//selected_subfolder2_id = "0";
+							$("#subfolders1").val(0);
+							$(".edit-subfolderconfig1-info").show();
+							console.log("after 1906");
+						}
+						//	$("#subfolders1").val(selected_subfolder2_id);
+						
+						if(nested_subsource_level=="folder"){
+							$(".search_file_folder").show();
+							$("#folderNote").show();
+						}else
+							$(".search_file_folder").hide();
+						if(nested_subsource_level=="file")
+							$("#folderNote").hide();
+							
+							
+							
+						$("#submit-button").prop("disabled", false);
+			
+						if(serachfileid!="0" && serachfileid!=""){
+							getSearcheFileDetails();
+						}
+					//	selected_subfolder2_id="0";
+						resize();
+				},
+				error: function(xmlHttpRequest,error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   } else{
+						$(".subfolderSelection1").hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+				}
+			});
+	}
+	
+	function getSearcheFileDetails(){
+		$(".search_file_folder").show();
+		var jsonbody = {};
+		jsonbody['userId'] = user_id;
+		jsonbody['integrationId'] = integration_id;
+		jsonbody['sourceType'] = source_type;
+		jsonbody['searchItemId'] = serachfileid;
+		var elementNotFound=false;
+		$.ajax({
+			url: configuration_settings_url,
+			async:true,
+			headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+			type: "POST",
+			data: JSON.stringify(jsonbody),
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){
+			if(result['postSpecificIntegrationSettings']['searchResponse']!=undefined && result['postSpecificIntegrationSettings']['searchResponse']!=false){
+				search_box_level = source_type;
+				$("#search_file_folder").val(result['postSpecificIntegrationSettings']['searchResponse'][0]['path']);
+				$("#search_file_folder_hidden").val(serachfileid);
+				elementNotFound=true;
+			}else{
+			console.log("enterd to show block 1962");
+				//	$("#resources").val(0);
+				elementNotFound=false;
+				$(".edit-itemconfig-info").show();
+				$("#search_file_folder_hidden").val("");
+				$("#search_file_folder").val("");
+			}
+			if(source_type=="file" &&	elementNotFound==true){
+				$("#folderNote").hide();
+				if($('#create1').is('checked',true)) 
+					$('#create1').prop("checked",false);
+				$('#create1').prop("disabled",true);
+				if($('#update1').is('checked',true))
+					$('#update1').prop("checked",false);
+				$('#update1').prop("disabled",true);
+			}else{
+				$("#folderNote").show();
+				if($('#create1').is('checked',true)) 
+					$('#create1').prop("checked",false);
+				$('#create1').prop("disabled",false);
+				if($('#update1').is('checked',true))
+					$('#update1').prop("checked",false);
+				$('#update1').prop("disabled",false);
+			}
+				resize();
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   } else{
+					$(".search_file_folder").hide();
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	
+	
+	function generateIntegrationAppToken(app_code) {
+		$.ajax({url: get_app_token_url,
+			async:true,
+			headers: { 'userId': user_id },
+			type: "get",
+			success: function(result){
+				if(result.tokenResult.tokenId) {
+					validateSpecificAppToken(app_code);
+				} else {
+					getIntegrationAppTokenDetails(app_code); 
+				}
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   }else{
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	function getAuthUser(){
+		if(ui_settings["integrationSpecificSettings"]!= undefined){
+			if(ui_settings["integrationSpecificSettings"]["settings"] != undefined && ui_settings["integrationSpecificSettings"]["settings"] != null)
+			authenticated_user=ui_settings["integrationSpecificSettings"]["settings"]["userDetails"].login;
+		}
+	}
+	function loadBoxForm(){
+		console.log("loadBoxForm.............");
+		$("#form").trigger("reset");
+		$('#integrations-block').hide();
+		$("#integration-form").show();
+		$(".edit-roomconfig-info").hide();
+		$(".edit-itemconfig-info").hide();
+		$(".rooms-loading").show();
+		resize();
+		$(".items-loading").show();
+		$.ajax({
+			url: configuration_settings_url,
+			async: true,
+			headers: { 'userId': user_id },
+			success: function(result){
+				$(".items-loading").hide();
+				ui_settings=result;	
+				loadConfigurationSettings();
+				loadRooms();
+			},
+			error: function(xmlHttpRequest,error) {
+				if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					return;
+				}else{
+					$('#integration-form').html("We've experienced some difficulty. Try again.");
+					$('#integration-form').hide();
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+		getAllSparkRooms();
+	}
+	function loadConfigurationSettings() {
+		console.log("loadConfigurationSettings..........");
+		if((ui_settings["sparkRoomSettings"] !=undefined) && (ui_settings["integrationSpecificSettings"]["settings"] != undefined) ){
+			var itemFlag=false;
+			var roomFlag=false;
+			var folderMatchFlag = false;
+			var rooms = "";
+			var authorizedto=ui_settings["integrationSpecificSettings"]["settings"]["userDetails"].login;
+			if(authorizedto!=""&&authorizedto!=undefined) {
+				$('#authenticted-to').html(authorizedto);
+				$(".authenticted-block").css("display","block");
+			}
+			
+			itemslist = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"]["entries"];
+		    offsetval_limit_main=ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"].offset;
+			total_count_main=ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"].total_count;
+			limit_main=ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"].limit;
+			console.log("total_count_main"+total_count_main);
+		    offsetval_limit_main=offsetval_limit_main+limit_main;
+			console.log("offsetval_limit_main"+offsetval_limit_main);
+			console.log("total_count_main"+total_count_main);
+			console.log("limit_main"+limit_main); 
+			var foldercount = 0;
+			var filecount = 0;
+			$("#folders").html(''); 
+			$("#files").html(''); 
+			$('.box_dropdownextramain').hide();
+			
+			elements_old_main_folders=elements_old_main_folders+itemslist.length;
+			old_main_folders.push(itemslist);
+			console.log("old_main_folders 2006"+old_main_folders);
+			$.each(itemslist, function(id,obj){		
+				if(isWebhookConfig){
+				    console.log(" 2047 selected_source_id "+selected_source_id+"obj.id "+obj.id);
+					if(obj.type=="folder"){
+						foldercount++;
+						$("#folders").append($('<option>').text(obj.name).attr('value',obj.id));
+						if(formAction=="update" && selected_source_id==obj.id && folderMatchFlag==false){
+							source_level="folder";
+							folderMatchFlag=true;
+							console.log("itemFlag 2053"+itemFlag);
+							itemFlag=true;
+							console.log("itemFlag 2054"+itemFlag);
+						}
+					}else if(obj.type=="file"){
+						filecount++;
+						$("#files").append($('<option>').text(obj.name).attr('value',obj.id));
+						
+						if(formAction=="update" && selected_source_id==obj.id){
+							source_level="file";
+							console.log("itemFlag 2060"+itemFlag);
+							itemFlag=true;
+							console.log("itemFlag"+itemFlag);
+						}
+					}
+				}else{
+					if(obj.type=="folder"){
+						foldercount++;
+						$("#folders1").append($('<option>').text(obj.name).attr('value',obj.id));
+						if(formAction=="update" && selected_source_id==obj.id && folderMatchFlag==false){
+							folderMatchFlag=true;
+
+						}
+					}else if(obj.type=="file"){
+						filecount++;
+						$("#files1").append($('<option>').text(obj.name).attr('value',obj.id));
+					}
+				}
+				if(formAction=="update" && selected_source_id==obj.id && itemFlag==false){
+					selected_source_id=obj.id;
+					itemFlag=true;
+				}
+			});
+			if(formAction=="update" && isWebhookConfig == false ){
+				if(selected_source_id =="all" || selected_source_id == "rootfolders" || selected_source_id=="rootfiles"){
+					$(".subfolderSelection1").hide();
+					$(".subfolderSelection").hide();
+				} 
+			}
+			
+			/////////////////////////
+			if(isWebhookConfig){
+				if(foldercount ==0) $('#folders').hide();
+				if(filecount ==0) $('#files').hide();
+			}else{
+				if(foldercount ==0) $('#folders1').hide();
+				if(filecount ==0) $('#files1').hide();
+			}
+			$('#rooms')[0].options.length = 1;
+			rooms = ui_settings["sparkRoomSettings"].items;
+			if(allRooms.length !=0) {
+				rooms = allRooms;
+			}
+			$.each(rooms, function(id,obj){
+				obj.title=$('<div />').text(obj.title).html();
+				$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+				if(formAction=="update" && selected_room_id==obj.id&&roomFlag==false){
+					selected_room_id=obj.id;
+					roomFlag=true;
+				}
+			});		
+			if(formAction=="update" && roomFlag==false){
+				selected_room_id = "0";
+				$(".edit-roomconfig-info").show();
+			}
+			$("#submit-button").prop("disabled", false);
+			console.log("itemFlag 2114"+ itemFlag);
+			console.log("");
+			if(formAction=="update"&& itemFlag== false){
+				console.log("after if 2142");
+			//	source_level = "folder";
+				$(".subfolderSelection1").hide();
+				$("#submit-button").prop("disabled", true);
+			    offsetval_limit_sub = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"].offset;
+				console.log("offsetval  ::"+offsetval_limit_sub);
+				console.log("selected_source_id  ::"+selected_source_id);
+				
+				var jsonObject2={};
+				jsonObject2["integrationId"] = integration_id;
+				jsonObject2["userId"] = user_id;
+				jsonObject2["sourceId"] = "0";
+				jsonObject2["offset"] = offsetval_limit_main;
+				//checking for selected item found
+				jsonString=JSON.stringify(jsonObject2);
+				console.log("total_count_main > offsetval_limit_main "+(total_count_main > offsetval_limit_main));
+				editTestFlag=true;
+				getMainFolderList(jsonString);
+			} 
+			console.log("itemFlagFound 2158"+itemFlagFound+itemFlag);
+			if(itemFlag==false){
+				if(formAction=="update" && itemFlagFound==false){
+					if(selected_source_id!="all"&&selected_source_id!="rootfolders"&&selected_source_id!="rootfiles"){
+					//	selected_source_id = "0";
+				    console.log("2158 edit");
+					//$("#resources").val(0);
+					selected_source_id = 0;
+					$(".edit-itemconfig-info").show();
+
+					}
+				}
+			}
+			else{
+			$(".edit-itemconfig-info").hide();
+			}
+			if(itemFlagFound==true && source_level=="folder")
+			{
+				folderMatchFlag=true;
+			}
+			
+			
+			if(formAction=="update"&& folderMatchFlag){
+				source_level = "folder";
+				$(".subfolderSelection1").hide();
+				$("#submit-button").prop("disabled", true);
+			    offsetval_limit_sub = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"].offset;
+				console.log("offsetval  ::"+offsetval_limit_sub);
+				console.log("selected_source_id  ::"+selected_source_id);
+				
+				var jsonObject={};
+						jsonObject["integrationId"] = integration_id;
+						jsonObject["userId"] = user_id;
+						jsonObject["sourceId"] = selected_source_id;
+						jsonObject["offset"] = offsetval_limit_sub;
+						jsonString=JSON.stringify(jsonObject);
+				getNestedFolderList(jsonString);
+			}else{
+			console.log("******* EDIT INSTANCE ****** "+source_level);
+				if(formAction=="update" && source_level=="file"){
+					source_level=="file";
+					//if($('#create1').is('checked',true)) 
+						$('#create1').prop("checked",false);
+					$('#create1').prop("disabled",true);
+					//if($('#update1').is('checked',true)) 
+						$('#update1').prop("checked",false);
+					$('#update1').prop("disabled",true);
+				}else if(formAction=="update" && source_level == 0){
+				console.log("&&&7");
+					if($('#create1').is('checked',true)) {console.log("folder checked true");$('#create1').prop("checked",false);}
+					$('#create1').prop("disabled",false);
+					if($('#update1').is('checked',true)) $('#update1').prop("checked",false);
+					$('#update1').prop("disabled",false);
+				}
+				
+				
+				
+			}
+			$("#rooms").val(selected_room_id);
+			//alert(selected_source_id)
+			if(isWebhookConfig)	$('#resources').val(selected_source_id);
+			else $('#resources1').val(selected_source_id);
+			$('#select2-rooms-container').html($("#rooms option:selected").text());
+			$(".rooms-loading").hide();
+			// selected_source_id="0";
+			resize();
+		}else{
+			$("#integration-form").hide();
+			alert("We've experienced some difficulty. Try again.");
+		}
+		
+				console.log("before if 2140");
+		
+	}
+	function validateConfiguration(instance, notifications){
+		var configData = JSON.parse(instance.configJson);
+		var configEvents = configData.events;
+		var notificationsLength = notifications.length;
+		var matchCount = 0;
+		var subfolder_id ="";
+		var nested_subfolder_id = "";
+		configFlag = false;
+		eventsMatchFlag = true;
+		if($("#subfolders").val()==0 && folderFlag && isWebhookConfig == false) subfolder_id= "all";
+		else if($("#subfolders").val()==0 && folderFlag) subfolder_id= "0";
+		else subfolder_id= $("#subfolders").val();
+		nested_subfolder_id = $("#subfolders1").val();
+		if(isWebhookConfig){
+			if(instance.channelId==room_id&&configData.source_id==selectedSourceId&&configData.sub_source_id==subfolder_id && configData.nested_sub_source_id == nested_subfolder_id){
+				configFlag = true;
+			}
+		}else{ 
+			if(instance.channelId==room_id&&configData.source_id==selectedSourceId&&configData.sub_source_id==subfolder_id){
+				configFlag = true;
+			}
+		}
+		if($.isArray(notifications)){
+			if($.isArray(configEvents)){
+				for (var p in notifications) {
+					if(configEvents[p] != notifications[p]){
+						eventsMatchFlag = false;
+					}else {
+						matchCount = matchCount +1;
+					}
+					if(matchCount==configEvents.length&&notificationsLength==configEvents.length){
+						eventsMatchFlag = true;
+						return false;
+					}else{
+						eventsMatchFlag = false;
+					}
+				}
+			}else{
+				eventsMatchFlag = false;
+			}
+		}else{
+			if($.isArray(configEvents)){
+			    eventsMatchFlag = false;
+			}else{
+			  if(configEvents==notifications){
+				eventsMatchFlag = true;
+			  }else{
+				eventsMatchFlag = false;
+			  }
+			}
+		}
+	}
+	function selectedEventsValues(events1){
+		if ($.isArray(events1)) {
+			console.log("events1 is array source_level "+source_level+" subsource_level "+subsource_level+" nested_subsource_level "+nested_subsource_level)
+			$.each(events1, function(index, value) {
+				
+				if((source_level=="folder"  &&  subsource_level == "file" && nested_subsource_level=="0" && search_box_level=="0")||(source_level=="file" &&  subsource_level ==  "0" && nested_subsource_level=="0" && search_box_level=="0") || (source_level=="folder" &&  subsource_level ==  "folder" && nested_subsource_level=="file" && search_box_level=="0")|| (source_level=="folder" &&  subsource_level ==  "folder" && nested_subsource_level=="folder" && search_box_level=="file")){
+					if(value=="delete1")Array.prototype.push.apply(selectedEvents, ["FILE.DELETED","FILE.TRASHED"])
+					if(value=="download1")selectedEvents.push("FILE.DOWNLOADED");
+					if(value=="copy1")selectedEvents.push("FILE.COPIED");
+					if(value=="move1")selectedEvents.push("FILE.MOVED");
+					if(value=="preview")selectedEvents.push("FILE.PREVIEWED");
+				}
+				if((source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="0" && search_box_level=="0")||( source_level=="folder" && subsource_level ==  "0" && nested_subsource_level=="0" && search_box_level=="0")||( source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="folder" && search_box_level=="0")||( source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="folder" && search_box_level=="folder")){
+					if(value=="create1")Array.prototype.push.apply(selectedEvents, ["FOLDER.CREATED","FILE.UPLOADED"]);
+					if(value=="update1"){  if( $.inArray("FILE.UPLOADED", selectedEvents) <= -1) selectedEvents.push("FILE.UPLOADED");}
+					if(value=="delete1")Array.prototype.push.apply(selectedEvents, ["FOLDER.DELETED","FOLDER.TRASHED","FILE.DELETED","FILE.TRASHED"]);
+					if(value=="download1")Array.prototype.push.apply(selectedEvents,["FOLDER.DOWNLOADED","FILE.DOWNLOADED"]);
+					if(value=="copy1")Array.prototype.push.apply(selectedEvents,["FOLDER.COPIED","FILE.COPIED"]);
+					if(value=="move1")Array.prototype.push.apply(selectedEvents,["FOLDER.MOVED","FILE.MOVED"]);
+					if(value=="preview")selectedEvents.push("FILE.PREVIEWED");
+				}
+				if(value=="share1")Array.prototype.push.apply(selectedEvents,["SHARED_LINK.CREATED","SHARED_LINK.UPDATED","SHARED_LINK.DELETED"]);
+				if(value=="comment1")Array.prototype.push.apply(selectedEvents,["COMMENT.CREATED","COMMENT.UPDATED","COMMENT.DELETED"]);
+				if(value=="taskAdded1")selectedEvents.push("TASK_ASSIGNMENT.CREATED");
+				if(value=="taskCompleted1")selectedEvents.push("TASK_ASSIGNMENT.UPDATED");
+			});
+		}else{
+			console.log("events1 is not an array")
+			if((source_level=="folder"  &&  subsource_level == "file" && nested_subsource_level=="0" && search_box_level=="0")||(source_level=="file" &&  subsource_level ==  "0" && nested_subsource_level=="0" && search_box_level=="0") || (source_level=="folder" &&  subsource_level ==  "folder" && nested_subsource_level=="file" && search_box_level=="0")|| (source_level=="folder" &&  subsource_level ==  "folder" && nested_subsource_level=="folder" && search_box_level=="file")){
+				if(events1=="delete1")Array.prototype.push.apply(selectedEvents, ["FILE.DELETED","FILE.TRASHED"]);
+				if(events1=="download1")selectedEvents.push("FILE.DOWNLOADED");
+				if(events1=="copy1")selectedEvents.push("FILE.COPIED");
+				if(events1=="move1")selectedEvents.push("FILE.MOVED");
+				if(events1=="preview")selectedEvents.push("FILE.PREVIEWED");
+			}
+			if((source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="0" && search_box_level=="0")||( source_level=="folder" && subsource_level ==  "0" && nested_subsource_level=="0" && search_box_level=="0")||( source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="folder" && search_box_level=="0")||( source_level=="folder" && subsource_level ==  "folder" && nested_subsource_level=="folder" && search_box_level=="folder")){
+				if(events1=="create1")Array.prototype.push.apply(selectedEvents, ["FOLDER.CREATED","FILE.UPLOADED"]);
+				if(events1=="update1"){ if( $.inArray("FILE.UPLOADED", selectedEvents) <= -1) selectedEvents.push("FILE.UPLOADED");}
+				if(events1=="delete1")Array.prototype.push.apply(selectedEvents, ["FOLDER.DELETED","FOLDER.TRASHED","FILE.DELETED","FILE.TRASHED"]);
+				if(events1=="download1")Array.prototype.push.apply(selectedEvents,["FOLDER.DOWNLOADED","FILE.DOWNLOADED"]);
+				if(events1=="copy1")Array.prototype.push.apply(selectedEvents,["FOLDER.COPIED","FILE.COPIED"]);
+				if(events1=="move1")Array.prototype.push.apply(selectedEvents,["FOLDER.MOVED","FILE.MOVED"]);
+				if(events1=="preview")selectedEvents.push("FILE.PREVIEWED");
+			}
+			if(events1=="share1")Array.prototype.push.apply(selectedEvents,["SHARED_LINK.CREATED","SHARED_LINK.UPDATED","SHARED_LINK.DELETED"]);
+			if(events1=="comment1")Array.prototype.push.apply(selectedEvents,["COMMENT.CREATED","COMMENT.UPDATED","COMMENT.DELETED"]);
+			if(events1=="taskAdded1") selectedEvents.push("TASK_ASSIGNMENT.CREATED");
+			if(events1=="taskCompleted1")selectedEvents.push("TASK_ASSIGNMENT.UPDATED");
+		}
+	}
+	
+	
+	function getSearcheFileDetailsSave(){
+		saveFlasgSearchFile=false;
+		var jsonbody = {};
+		jsonbody['userId'] = user_id;
+		jsonbody['integrationId'] = integration_id;
+		jsonbody['sourceType'] = search_box_level;
+		jsonbody['searchItemId'] = $("#search_file_folder_hidden").val();
+		$.ajax({
+			url: configuration_settings_url,
+			async:true,
+			headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+			type: "POST",
+			data: JSON.stringify(jsonbody),
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){
+				saveFlag = true;
+				if(result['postSpecificIntegrationSettings']['searchResponse']!=undefined && result['postSpecificIntegrationSettings']['searchResponse']!=false && result['postSpecificIntegrationSettings']['searchResponse'][0]['path']==$("#search_file_folder").val()){
+					saveFlasgSearchFile=true;
+				}else
+					saveFlasgSearchFile=false;
+			},
+			error: function(xmlHttpRequest,error) {
+			   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+				   return;
+			   } else{
+					$(".search_file_folder").hide();
+					alert("We've experienced some difficulty. Try again.");
+				}
+			}
+		});
+	}
+	
+	
+	function saveBoxInstance(){
+		if(isWebhookConfig && $("#search_file_folder").val()!=""){
+			saveFlag=false;
+			getSearcheFileDetailsSave();
+			var timeout = window.setInterval(function(){
+				if(saveFlag){
+					window.clearInterval(timeout);
+					saveBoxConfigInstance();
+				}
+			}, 200);
+			
+		}else{
+			$("#search_file_folder_hidden").val("");
+			saveFlasgSearchFile=true;
+			saveBoxConfigInstance();
+		}
+	}
+	
+	function saveBoxConfigInstance(){
+		//$('#same-configuration').foundation('close');
+		var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		if(isWebhookConfig)	selectedSourceId=$("#resources option:selected").val();
+		else selectedSourceId= $("#resources1 option:selected").val();
+		selectedSubsourceId = $('#subfolders').val();
+		selectedNestedSubSourceId = $('#subfolders1').val();
+		
+		var jsonData = {};
+		room_id =$("#rooms option:selected").val();
+		jsonData["channelId"] = room_id;									
+		jsonData["integrationId"] = integration_id;
+		jsonData["status"] = "ACTIVE";
+		jsonData["userId"] =user_id;
+		var action_url;
+		var actionType;
+		postAddMessageToRoom(room_id,appName);
+		//if(isUpdateInstance){
+			if(formAction=="update") {
+				jsonData["instance_id"] = instanceId;
+				jsonData["instanceUuid"] = instance_uuid;
+				if(room_id!=room_id_old) {
+					room_modified=true;
+					jsonData["messageToSpark"] = updateMessageToSpark;
+				} else {
+					room_modified=false;
+				}
+				//## repo_modified 
+				if(!isWebhookConfig){
+					if($('#subfolder').val() != 0 && (subsource_level=="file" || subsource_level=="folder") ){
+						if(selectedSubsourceId!=subsource_id_old) source_modified=true;
+						else source_modified=false;	
+					}else{
+						if($('#resources1').val() != 0 && source_id_old!=selectedSourceId) source_modified=true;
+						else source_modified=false;
+					}
+				}
+				jsonData["room_modified"] = room_modified;	
+				jsonData["repo_modified"] = source_modified;				
+				jsonData["configJson"]=JSON.parse(instanceData.configJson);
+				action_url=update_configuration_settings_url+instanceId;
+				actionType="PUT";
+				$('.loading-first-block').html('Please wait while your Integration is being updated');
+			} else {
+				jsonData["configJson"]={};
+				jsonData["messageToSpark"] = postMessageToSpark;
+				action_url=save_configuration_settings_url;
+				actionType="POST";
+				$('.loading-first-block').html('Please wait while your Integration is being set up');
+			}
+		/* }else {
+			jsonData["configJson"]={};
+			jsonData["messageToSpark"] = postMessageToSpark;
+			action_url=save_configuration_settings_url;
+			actionType="POST";
+			$('.loading-first-block').html('Please wait while your Integration is being set up');
+		} */
+		jsonData["configJson"]["source_id"]= selectedSourceId;
+		var itemslist = ui_settings["integrationSpecificSettings"]["settings"]["flodersList"]["item_collection"];	
+		$.each(itemslist["entries"], function(id,obj){	
+			if(obj.type=="folder"){
+				if(selectedSourceId==obj.id && folderFlag==false){
+					folderFlag=true;
+				}
+			}
+		});
+		// ## selctedSourceId 
+		if(isWebhookConfig){
+		jsonData["configJson"]["search_source_id"] = "";
+			if($("#search_file_folder").val()!=""){
+				selectedSource_id = serachfileid;
+				jsonData["configJson"]["selectedSourceId"]= serachfileid;
+				jsonData["configJson"]["source_type"]=search_box_level;
+				jsonData["configJson"]["search_source_id"]=serachfileid;
+			}else if(nested_subsource_level!= 0 && $('#subfolders1').val()!=0){
+				selectedSource_id = $('#subfolders1').val();
+				jsonData["configJson"]["selectedSourceId"]= $('#subfolders1').val();
+				if(nested_subsource_level == "folder") jsonData["configJson"]["source_type"]="folder";
+				if(nested_subsource_level == "file") jsonData["configJson"]["source_type"]="file";
+			}else if(nested_subsource_level==0 && subsource_level!= 0 && $('#subfolders').val()!=0 ){
+				selectedSource_id = $('#subfolders').val();
+				jsonData["configJson"]["selectedSourceId"]= $('#subfolders').val();
+				if(subsource_level == "folder") jsonData["configJson"]["source_type"]="folder";
+				if(subsource_level == "file") jsonData["configJson"]["source_type"]="file";
+			}else{
+				selectedSource_id = $('#resources').val();
+				jsonData["configJson"]["selectedSourceId"]= $('#resources').val();
+				if(source_level == "folder") jsonData["configJson"]["source_type"]="folder";
+				if(source_level == "file") jsonData["configJson"]["source_type"]="file";
+			}
+			
+			 if(selectedSource_id_old!=selectedSource_id){
+				jsonData["repo_modified"] = true;
+				source_modified = false;
+			}else{
+				jsonData["repo_modified"] = false;
+				source_modified = true;
+			} 
+		}
+		//## subsource
+		if($("#subfolders").val()==0 && folderFlag && isWebhookConfig){
+			 jsonData["configJson"]["sub_source_id"]= "0";
+		}else if($("#subfolders").val()==0 && folderFlag && isWebhookConfig==false &&( $("#resources1").val() != "all" || $("#resources1").val() != "rootfolders" || $("#resources1").val() != "rootfiles"   )){
+			jsonData["configJson"]["sub_source_id"]= "all";
+		}else {
+			jsonData["configJson"]["sub_source_id"]= $("#subfolders").val();
+		}
+		if($("#subfolders").val() != 0 && $("#subfolders1").val()!=0) jsonData["configJson"]["nested_sub_source_id"] = $("#subfolders1").val();
+		else jsonData["configJson"]["nested_sub_source_id"] = "0";
+		console.log("res.events1" +res.events1+" selectedEvents "+selectedEvents);
+		
+		if(isWebhookConfig) selectedEventsValues(res.events1);
+		console.log("res.events1" +res.events1+" selectedEvents "+selectedEvents);
+		if(isWebhookConfig == false){ 
+			$('.success-integration-note-block').html("<b>Note:</b> You may see a delay of up to 2 minutes to receive notifications in to your Cisco Spark spaces after it's been triggered.");
+			jsonData["configJson"]["events"]=res.events;
+			var notifications = res.events;
+			var notificationslength = objLength(res.events);
+			jsonData["messageFormat"]="Box Bot :Hello...User";
+		}else{
+			$('.success-integration-note-block').html('');
+			jsonData["configJson"]["events"]=res.events1;	
+			jsonData["configJson"]["selectedEvents"]= selectedEvents;
+			jsonData["messageFormat"]="Box Webhook";			
+			var notifications = res.events1;
+			var notificationslength = objLength(res.events1);
+		}
+		jsonData["configJson"]["displayName"]= res.displayName;
+		var jsonString = JSON.stringify(jsonData);
+		if(listResultData.length != 0 && notificationslength !=0){
+			$.each(listResultData, function(i, instance) {
+				if(formAction=="update" && instance.instanceId!=instanceId){
+				 validateConfiguration(instance, notifications);
+				 if(eventsMatchFlag==true&&configFlag==true){
+						return false;
+					}
+				}
+				if(formAction!="update"){
+				 validateConfiguration(instance, notifications);
+				  if(eventsMatchFlag==true && configFlag==true){
+						return false;
+					}
+				}
+			});
+		}
+		if($('#rooms').val()==0 || $('#rooms').val()==null){ 
+		    alert("Please select a space");
+		}else if(notificationslength==0){
+			alert("Please select at least 1 notification");
+		}else if(($('#resources').val() == 0 && isWebhookConfig) || ($('#resources1').val() == 0 && isWebhookConfig==false)){ 
+		    alert("Please select Folders/Files");
+		}else if(!saveFlasgSearchFile){
+			alert("Searched file/folder does't exist.");
+		}else {
+			sourceFound = false;
+			if(isWebhookConfig){
+				var listData = "";
+				if(listResultData.length != 0){
+					$.each(listResultData, function(i, value) {
+						listData = JSON.parse(value.configJson);
+						if(formAction == "update" && value['instanceId'] != instanceId){
+							if(selectedSource_id == listData["selectedSourceId"]){ 
+								sourceFound = true;
+								return false;
+							}else sourceFound = false;
+						}else if(formAction=="add"){
+							if(selectedSource_id == listData["selectedSourceId"]){ 
+								sourceFound = true;
+								return false;
+							}else sourceFound = false;
+						}
+					});
+				}
+				if(sourceFound){
+					//alert("Please select a different file/folder as you already have another configuration created for the selected one. Given the limitation on Box, we cannot enable instant notifications from one file/folder to multiple Spark spaces.");
+					$('#webhook-warning-modal').foundation('open');
+				}else{
+					$('.loading-second-block').html('Selected space is '+ selectedRoomName);
+					$('#loading-block').foundation('open');
+					$.ajax({url: action_url,
+						async:true,
+						headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+						type: actionType,
+						data: jsonString,
+						contentType: "application/json",
+						dataType: "json",
+						success: function(result){
+							if(formAction=="update" && result["UpdateIntegrationResponse"]!= undefined && result["UpdateIntegrationResponse"]["webhookCreation"] == false){
+								$('#same-configuration').foundation('open');
+							}else if(result["startResponse"] != undefined && result["startResponse"]["webhookCreation"] !=undefined && !result["startResponse"]["webhookCreation"]){
+								$('#same-configuration').foundation('open');
+							}else{
+								$('#loading-block').foundation('close');
+								$('#success-integration').foundation('open');
+							}
+						
+							/*if(formAction=="update" && result["UpdateIntegrationResponse"]!= undefined && result["UpdateIntegrationResponse"]["webhookCreation"] == false){
+								$('#same-configuration').foundation('open');
+							}else if(result["startResponse"] != undefined && result["startResponse"]["webhookCreation"] != undefined && result["startResponse"]["webhookCreation"] == false){
+								$('#same-configuration').foundation('open');
+							}else{ */
+								
+							//}
+						},
+						error: function(xmlHttpRequest, error) {
+						   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+							   return;
+						   }else{
+								$('#loading-block').foundation('close');
+								alert("We've experienced some difficulty. Try again.");
+							}
+						}
+					});
+					$('.loading-first-block').html('Please wait just a moment while your app is loading');
+					$('.loading-second-block').html('');
+				}	
+			}else{
+				$('.loading-second-block').html('Selected Space is '+ selectedRoomName);
+				$('#loading-block').foundation('open');
+				$.ajax({url: action_url,
+					async:true,
+					headers: { 'userId': user_id , 'x-csrf-jwt': csrfJwt},
+					type: actionType,
+					data: jsonString,
+					contentType: "application/json",
+					dataType: "json",
+					success: function(result){
+						
+							$('#loading-block').foundation('close');
+							$('#success-integration').foundation('open');
+					},
+					error: function(xmlHttpRequest, error) {
+					   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+						   return;
+					   } else{
+							$('#loading-block').foundation('close');
+							alert("We've experienced some difficulty. Try again.");
+						}
+					}
+				});
+				$('.loading-first-block').html('Please wait just a moment while your app is loading');
+				$('.loading-second-block').html('');
+			}
+		}
+	}
+</script>
+</head>
+<body data-whatinput="mouse">	
+	<div class="integration-app" id="box">
+		<div class="rows large-12 medium-12 columns warning-msg" style="display:none;"></div>
+		<div class="rows large-12 medium-12 columns client-app-warning" style="display:none;"></div>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading"><img class="spark-icon" src="" alt="....."></div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment while your app is loading</div>
+				<div class="loading-second-block">name and space name</div>
+				<div class="loading-bar"><div class="loading-background"></div>	</div>
+			</div>
+		</div>
+		<div id="list-loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading"><img class="spark-icon" src="" alt="....."></div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait...</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-bar"><div class="loading-background"></div>	</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal success-integration" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-loading">
+				<img class="spark-icon" src="" alt=".....">
+			</div>
+			<div class="well-done-text">Well done!</div>
+			<div class="success-integration-first-block">Your configuration has been set up and is ready to use.</div>
+			<div class="success-integration-note-block"><b>Note:</b> You may see a delay of up to 2 minutes to receive notifications in your Cisco Spark spaces after it's been triggered.</div>
+			<div class="large-5 medium-5 columns buttons-block">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Space</button>-->
+					<button class="secondary button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns desktop-block">
+				<div class="row ">
+					<div class="large-2 medium-2 columns"><img alt="icon" id="box-icon" src=""></div>
+					<div class="large-6 medium-6 columns" style="float:left;">
+						<span id="displayName-label">Box</span><br>
+						<span id="addedon-label"></span>
+					</div>
+				</div><br>
+				<div class="msg-labels">
+					<label id="remove-msg"></label> 
+					<label id="remove-auth"></label>
+				</div>
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button remove-integration-btn" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+			<div class="large-12 columns mobile-block">	
+				<div class="msg-labels">
+					<label id="remove-msg-mobile"></label> 
+					<label id="remove-auth-mobile"></label> 
+				</div>				
+				<div class="option-buttons remove-integration-buttons">
+					<label id="cancel-remove-integration" class="remove-popup-cancel"> 
+						<a href="#" >Cancel</a>
+					</label>
+					<label class="remove-popup-remove remove-integration-btn">
+						<a href="#">Remove</a>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div id="same-configuration" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="same-config-text">It's seems already webhook created for your selected folder/file. Click <b>Edit</b> to change your folder/file selection. Click <b>Cancel</b> to previous page</div>
+			<div class="large-5 medium-5 columns buttons-block">
+				<button class="secondary button same-config-yes">Edit</button>
+				<button class="secondary button same-config-no">Cancel</button>
+			</div>
+		</div>
+		<div id="webhook-warning-modal" class="reveal"  data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div><p><!-- <span class="info-bulb-icon">&nbsp</span>-->Please select a different file/folder as you already have another configuration created for the selected one. Given the limitation on Box, we cannot enable instant notifications from one file/folder to multiple Spark spaces.</p></div>
+			<div class="large-2 medium-2 columns button-control" >
+				<button class="secondary button close-modal">Close</button>
+			</div>  
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="instance-loading-block" class="row instance-loading-block" style="display: none;">
+				<div class="instances-loading">&nbsp;</div>
+				<div class="instances-loading-text"></div>
+			</div>
+			<div id="home" class="home">
+				<div class="row add-config-block">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns config-name"><label class="label-config">Box configurations</label></div>
+						<div class="large-6 medium-6 columns">
+							<button class="remove-all-btn" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+							<button class="secondary button" id="add-config">Add</button>
+						</div>					
+					</div>
+				</div>
+				<div id="instance-list-block" class="row instance-list-block"></div>
+			</div>
+		</div>
+		<div id="integration-form" class="large-12 columns" >
+			<div class="large-12 medium-12 columns edit-itemconfig-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured Folder / File does not exist.</span></p>
+			</div>
+			<div class="large-12 medium-12 columns edit-subfolderconfig-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured Subfolder / File does not exist.</span></p>
+			</div>
+			<div class="large-12 medium-12 columns edit-subfolderconfig1-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured nested Subfolder / File does not exist.</span></p>
+			</div>
+			<div class="large-12 medium-12 columns edit-roomconfig-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured space does not exist.</span></p>
+			</div>
+			<div class="authenticted-block">Authenticated to Box as: <span id="authenticted-to"></span></div>
+			<div class="no-configuration-block" style="display:none">There are No Folders/Files in your Box Account. Please Add folders/files in your account and configure for Notifications</div>
+			<form name="form" id="form" method="post">
+				<div class="row app-config-block">
+					<div class="large-10 medium-10 columns first sub-config-block">
+						<label class="heading-01">Box configuration</label>
+						<div id="webhook-config" class="large-8 columns" style="display:block">
+							<div class="large-3 medium-3 columns items-config label-margin">
+								<label class="label-config">Folders / Files
+									<span class="has-tip tip-right" id="tooltip" title="Select Folders and Files for which you'd like to receive notifications. Individual Folder or File selection enabled only for root level Folders and Files" data-tooltip><img class="tool-tip"></span>
+								</label>
+							</div> 
+							<div class="large-5 medium-6 columns dropdown-config text left" style="display:block">
+								<select id="resources" name="resource" class="dropdown">
+									<option value="0">Select Folders / Files</option>									
+									<optgroup id="folders" label="Root Folders"></optgroup >
+									<optgroup id="files" label="Root Files"></optgroup >																	 
+								</select>
+								<!--<span class="has-tip tip-right" id="tooltip" title="Select Folders and Files for which you'd like to receive notifications. Individual folder or file selection enabled only for root level folders and files" data-tooltip><img class="tool-tip"></span>-->
+								<!--Selecting All Folders will also send notifications about all the nested folders and files.-->
+								 <div class="box_dropdownextramain" style="display:none;">
+								<!-- <input type="button" class="" value="Load More Folders / Files" style="width: 30%; margin: 0 0 0 -71px;font-size: small;" id="box_dropdownextramainfolders">  -->
+								<div class="more_folders_files" id="box_dropdownextramainfolders" title="Load More Folders / Files"></div>
+								</div>
+								<div class="items-loading" style="display: none;"></div>
+                        	</div>
+								
+						</div>
+						<div id="pooling-config" class="large-8 columns" style="display:none">
+							<div class="large-3 medium-3 columns items-config label-margin">
+								<label class="label-config">Folders / Files
+									<span class="has-tip tip-right" id="tooltip" title="Select Folders and Files for which you'd like to receive notifications. Selecting All Folders will also send notifications about all the Nested Folders and Files. Individual Folder or File selection enabled only for root level Folders and Files" data-tooltip><img class="tool-tip"></span>
+								</label>
+							</div>
+							<div class="large-5 medium-6 columns dropdown-config text left" >
+								<select id="resources1" name="resource1" class="dropdown">
+									<option value='0' >Select Folders / Files</option>									
+									<option value="all">All Folders & Files </option>
+									<option value="rootfolders" >All Folders (including nested folders and files)</option>
+									<option value="rootfiles" >All Files</option>
+									<optgroup id="folders1" label="Root Folders"></optgroup >
+									<optgroup id="files1" label="Root Files"></optgroup >																	 
+								</select>
+								<!--<span class="has-tip tip-right" id="tooltip" title="Select Folders and Files for which you'd like to receive notifications. Selecting All Folders will also send notifications about all the nested folders and files. Individual folder or file selection enabled only for root level folders and files" data-tooltip><img class="tool-tip"></span>-->
+								<div class="items-loading" style="display: none;"></div>	
+							</div>
+						</div>
+						
+					</div>
+					<div class="large-10 medium-10 columns sub-config-block subfolderSelection" style="display:none;">
+						<div class="large-8 columns">
+							<div class="large-3 medium-3 columns items-config config-optional label-margin">
+								<label class="label-config">Subfolders / Files (Optional)
+									<span class="has-tip tip-right sub-folderfiles-tooltip"  id="tooltip" title="Select Subfolders for which you'd like to receive notifications. If you don't select then you will get notifications for all Subfolders." data-tooltip><img class="tool-tip"></span>
+								</label>
+							</div>
+			
+							
+						
+							<div class="large-5 medium-6 columns dropdown-config text left ">
+								<select id="subfolders" name="subfolders" class="dropdown">
+									<option value="0">All Subfolders / Files</option>
+									<optgroup id="sub_folders" label="Subfolders"></optgroup >
+									<optgroup id="sub_files" label="Subfiles"></optgroup >
+								</select>
+								<!-- <span class="has-tip tip-right" id="tooltip" title="Select Subfolders for which you'd like to receive notifications. If you don't select then you will get notifications for all subfolders." data-tooltip><img class="tool-tip"></span> -->
+								<div class="box_dropdownextra" style="display:none;">
+								<!-- <input type="button" class="" value="Load more sub Folders / Files" style="width: 30%; margin: 0 0 0 -71px;font-size: small;" id="box_dropdownextrafolders"> -->
+									<div class="more_folders_files" id="box_dropdownextrafolders" title="Load More Subfolders / Files"></div>
+								</div>
+								<div class="subitems-loading" style="display: none;"></div>
+							</div>
+							<!-- <div class="box_dropdown_prev" style="display:none;">
+								<input type="button" class="box_dropdown_prev" value="&laquo;" style="width:4%;">
+							</div>		 --> 	
+							
+						</div>
+					</div>
+					<div class="large-10 medium-10 columns sub-config-block subfolderSelection1" style="display:none;">
+						<div class="large-8 columns">
+							<div class="large-3 medium-3 columns items-config config-optional label-margin">
+								<label class="label-config">Nested Subfolders / Files (Optional)
+									<span class="has-tip tip-right nested-folderfiles-tooltip" id="tooltip" title="Select Nested Subfolders for which you'd like to receive notifications. If you don't select then you will get notifications for all Nested Subfolders." data-tooltip  style="margin: -15px 0px 0px 22px;"><img class="tool-tip" ></span>
+								</label>
+							</div>
+							<div class="large-5 medium-6 columns dropdown-config text left ">
+								<select id="subfolders1" name="subfolders1" class="dropdown">
+									<option value="0">All Nested Subfolders / Files</option>
+									<optgroup id="nestedsubfolders" label="Nested Subfolders"></optgroup >
+									<optgroup id="nestedsubfiles" label="Nested Subfiles"></optgroup >									
+								</select>
+								<!--<span class="has-tip tip-right" id="tooltip" title="Select nested subfolders for which you'd like to receive notifications. If you don't select then you will get notifications for all subfolders." data-tooltip><img class="tool-tip"></span>-->
+								<div class="box_dropdownextra1" style="display:none;">
+								<!-- <input type="button" class="" value="" style="width: 30%; margin: 0 0 0 -71px;   font-size: 10px;;" id="box_dropdownextrafolders11">  -->
+									<div class="more_folders_files" id="box_dropdownextrafolders11" title="Load More Nested Subfolders / Files"></div>
+								</div>
+								<div class="subitems-loading1" style="display: none;"></div>
+							</div>	
+								
+						</div>
+					</div>
+					<!--<div class="large-10 medium-10 columns sub-config-block search_box search_file_folder" style='display:none'>
+						<div class="large-8 columns">
+							<div class="large-3 medium-3 columns items-config config-optional">
+								<label class="label-config">Search folders/files (Optional)</label>
+							</div>
+							<div class="large-5 medium-6 columns mynewclass">
+								<table style="border-collapse:collapse;width:100%;border:1px solid #D7D7D7;margin:0px;border-radius:3px;">
+									<tbody style="border:0px;border:none !important;">
+									<tr style="border:none">
+										<td style="width:90%;padding:0px;border:0px;">
+											<input name="search_file_folder" id="search_file_folder" style='margin:0px;' class="integration-name" autocomplete="off" value="" type="text">
+											<input name="search_file_folder_hidden" id="search_file_folder_hidden" type="hidden">
+										</td>
+										<td class="searchtd" id="dropboxsearchitems"></td>
+									</tr>
+									</tbody>
+								</table>
+								<div id="select_resource" style="display: block;"><div id="search_query_box"></div></div>
+							</div>
+							<span style="margin-left: 0px !important;" class="has-tip tip-right newtooltip" id="tooltip" title="Search and select file/folder for which you'd like to receive notifications." data-tooltip><img class="tool-tip"></span>
+							<div class="subitems-loading1" style="display: none;"></div>							
+						</div>
+					</div> -->
+					<div class="large-10 medium-10 columns first  sub-config-block search_file_folder" style='display:none'>
+						<div class="large-8 columns items-config">
+							<div class="large-3 medium-3 columns config-optional" style="margin-right:30px;">
+								<label class="label-config">Search Folders / Files (Optional)
+								<span class="has-tip tip-right search-folderfile-tooltip" id="tooltip" title="Search by name the file or folder of your choice." data-tooltip><img class="tool-tip"></span></label>
+							</div>
+							<div class="large-5 medium-6 columns dropdown-config text left mynewclass">
+								<table style='width:80%;margin:0px;border-radius:3px;'>
+									<tbody style="border:0px;border:none !important;">
+									<tr style='border:none'>
+										<td style='width:90%;padding:0px;border:0px;'>
+											<input type='text' name="search_file_folder" placeholder="Search Folder or File " id="search_file_folder" class="integration-name" autocomplete='off' value=""/>
+											<input type='hidden' id='search_file_folder_hidden' name="search_file_folder_hidden"/>
+										</td>
+									</tr>
+									</tbody>
+								</table>
+								<input type="button" class="secondary button search-btn" value="Search"/>
+								<span class="search-items-loading" style="display:none"></span>
+								<div id='select_resource'><div id='search_query_box'></div></div>
+							 
+							</div>
+							
+						</div>
+					</div>
+					<div class="large-12 columns events-config">
+						<div class="large-12 medium-12 columns events">
+							<label>Notifications</label>
+							<div id="events" class="events-sub">
+								<label id='folderNote'>Note: If a folder is selected, notifications selected below will be applied to all files and subfolders within the selected folder.</label>
+								<div id="webhook-events" style="display:block">
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="create1" name="events1" value="create1"/><label for="create1">Create/Upload</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="update1" name="events1" value="update1"/><label for="update1">File content update</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="box-copy1" name="events1" value="copy1"/><label for="box-copy1">Copy</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="move1" name="events1" value="move1"/><label for="move1">Move</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="share1" name="events1" value="share1"/><label for="share1">Share</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="comment1" name="events1" value="comment1"/><label for="comment1">Comment</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="download1" name="events1" value="download1"/><label for="download1">Download</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="delete1" name="events1" value="delete1"/><label for="delete1">Delete</label></div>
+									</div>									
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="taskAdded1" name="events1" value="taskAdded1"/><label for="taskAdded1">Add Task</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="taskCompleted1" name="events1" value="taskCompleted1"/><label for="taskCompleted1">Complete Task</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="preview" name="events1" value="preview"/><label for="preview">Preview</label></div>
+									</div>
+								</div>
+								<div id="pooling-events" style="display:none">
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="create" name="events" value="create"/><label for="create">Create/Upload</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="delete" name="events" value="delete"/><label for="delete">Delete</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="rename" name="events" value="rename"/><label for="rename">Rename</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="box-copy" name="events" value="copy"/><label for="box-copy">Copy</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="share" name="events" value="share"/><label for="share">Share</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="comment" name="events" value="comment"/><label for="comment">Comment</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="download" name="events" value="download"/><label for="download">Download</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="move" name="events" value="move"/><label for="move">Move</label></div>
+									</div>
+									<div class="large-12 medium-12 columns">
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="taskAdded" name="events" value="taskAdded"/><label for="taskAdded">Add Task</label></div>
+										<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="taskCompleted" name="events" value="taskCompleted"/><label for="taskCompleted">Complete Task</label></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>							 
+				<div class="row spark-config-block">
+					<div class="large-10 medium-10 columns">
+						<h3 class="heading-01">Cisco Spark configuration</h3>
+						<div class="large-8 columns sub-config-block">
+							<div class="large-2 medium-3 columns small-mobile">
+								<label>Space
+									<span class="has-tip tip-right" id="tooltip" title="Space in which you'd like to receive notifications. Spaces with at least 1 message will appear here." data-tooltip><img class="tool-tip"></span>
+								</label>
+							</div>
+							<div class="large-5 medium-5 columns text left input-small-mobile">
+								<select name="room" id="rooms" class="custom-select">
+									<option value='0'>Please select a space</option>
+								</select>
+							</div>
+							<div class="spaces-refresh" title="Refresh the spaces"></div>
+							<div class="rooms-loading" style="display: none;"></div>
+						</div>
+						<div class="large-8 columns sub-config-block left">
+							<div class="large-2 medium-3 columns small-mobile config-optional">
+								<label>Configuration name (optional)</label>
+							</div>
+							<div class="large-5 medium-5 columns text left input-small-mobile">
+								<input type="text" name="displayName" id="displayName" class="integration-name"	value="">
+							</div>							
+						</div>
+					</div>
+				</div>
+				<div class="row integration-config-block">
+					<div class="large-5 medium-5 columns"> &nbsp;</div>
+					<div class="large-4 medium-4 columns left">
+						<button id="cancel-button" class="button">Cancel</button>
+						<button id="submit-button" class="button secondary text">Add Integration</button>
+					</div>
+				</div>
+			</form>
+		</div>		
+	</div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<script>
+	var url = document.referrer;
+	url = url.substring(url.indexOf("?")+1)
+	var key = url.substring(0,url.indexOf("="));
+	var value = url.substring(url.indexOf("=")+1);
+	alert("key : "+key+"   value : "+value)
+</script> 

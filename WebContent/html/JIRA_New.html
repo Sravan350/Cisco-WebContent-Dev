@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Git Hub Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/jquery-customselect.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/jquery-customselect.css" rel="stylesheet" type="text/css">
+<script src="https://d24wgzqqegxpap.cloudfront.net/api/js/jquery.multiselect.js"></script>
+<link href="https://d24wgzqqegxpap.cloudfront.net/api/css/jquery.multiselect.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+<script type="text/javascript">
+	integration_app_icon_url="https://d24wgzqqegxpap.cloudfront.net/api/images/jira/jira.png";
+	oauthRequired=false;
+	var instanceUuid ="";
+	var webhookUrl = "";
+	var issueTypesText;
+	var issueSelectedText;
+	var typeslength = 0;
+	var room_id = "";
+	var issueStatusMatchFlag = true;
+	var issueTypeMatchFlag = true;
+	var configFlag = false;
+	var statusFlag = false;
+	var customTypes =[{"id": "528023294","name": "Comment added"},{"id": "528023295","name": "Attachment added"}];
+	appName = "JIRA Software";
+	
+	$( document ).ready(function() {
+		$('#integrations-block').show();
+		$('#integration-form').hide();
+		
+		$('#jira #add-config').click(function(e){
+			e.preventDefault();	
+			formAction="add";
+			
+			$('.issuestatus div.ms-options-wrap > button').html("Select Statuses");
+			$('.issuetypes div.ms-options-wrap > button').html("Select Types");
+			$('#instanceid').val('');
+			$("#expand-close-config").removeClass("expandarrow");
+			$("#expand-close-config").addClass("closearrow");
+			$('.closearrow').attr('title','close');
+			$(".config-info").hide();
+			$("#showConfig").hide();			
+			$("#config-label").html('You have to be a JIRA admin to add this configuration. Please follow the below steps to add this configuration. You can add/edit/delete multiple configurations at anytime.');
+			loadJiraForm();	
+		});
+		$('#add_customtypes').on('click',function(){
+			var customtype = $("#customtype_field").val();
+			console.log("customtype is "+customtype);
+			if(customtype !=""){
+				$("#issue-types-options").append($('<option>').text(customtype).attr('value',customtype).prop('selected', true));
+				$('#issuetypes').multiselect('reload');
+				$('.issuetypes div.ms-options > ul > li > ul > li').find(':checkbox').attr('name', 'issuetype');
+				$('.issuetypes div.ms-options > ul > li > ul > li').find(':checkbox').attr('class', 'issuetype');
+				$('.issuetypes div.ms-options > ul > li > ul > li input[value="All"]').attr('class', 'issuetypeall');
+				$("#customtype_field").val('');
+			}else{
+				alert("Please give your custom issue type");
+			}
+			
+		});
+		$('#add_customstatus').on('click',function(){
+			var customStatus = $("#customstatus_field").val();
+			console.log("customStatus is "+customStatus);
+			if(customStatus !=""){
+				$("#issue-status-options").append($('<option>').text(customStatus).attr('value',customStatus).prop('selected', true));
+				$('#issuestatus').multiselect('reload');
+				$('.issuestatus div.ms-options > ul > li > ul > li').find(':checkbox').attr('name', 'status');
+				$('.issuestatus div.ms-options > ul > li > ul > li').find(':checkbox').attr('class', 'status');
+				$("#customstatus_field").val('');
+			}else{
+				alert("Please give your custom issue type");
+			}
+			
+		});
+		
+		
+		$("#issuestatus").val('');
+		$("#issuetypes").val('');
+		$("#issuestatus").on( "change",function() {
+			var statuslength = $('input[name="status"]:checked').length;
+			var typeslength = $('input[name="issuetype"]:checked').length;
+			var statusArray = [];
+			console.log("In onchange statuslength "+statuslength);
+			$(".status:checked").each(function() {
+				statusArray.push($(this).val());
+			});
+			console.log("In onchange statusArray "+statusArray);
+			issueSelectedText = statusArray.join(',');
+			console.log("In onchange issueSelectedText "+issueSelectedText);
+			if(statuslength!=0){
+			$('.issuestatus div.ms-options-wrap > button').html(issueSelectedText);
+			}else{
+				$('.issuestatus div.ms-options-wrap > button').html("Select Statuses");
+			}
+			if((statuslength!=0) && (typeslength!=0)){
+				$(".config-info").show();
+				$("#showConfig").show();
+				$("#expand-close-config").removeClass("expandarrow");
+				$("#expand-close-config").addClass("closearrow");
+				$('.closearrow').attr('title','close');
+			} else {
+				$(".config-info").hide();
+				$("#showConfig").hide();
+			}	
+			
+		});
+		$("#issuetypes").on("change",function() {
+			var statuslength = $('input[name="status"]:checked').length;
+			typeslength = $('input[name="issuetype"]:checked').length;
+			var issueTpesArray = [];
+			var issueTypesText;
+			
+			$(".issuetype:checked").each(function() {
+				issueTpesArray.push($(this).val());
+			});
+			
+			issueTypesText = issueTpesArray.join(',');
+
+			if(typeslength >= 1){
+			$('.issuetypes div.ms-options-wrap > button').html(issueTypesText);
+			}else{
+				$('.issuetypes div.ms-options-wrap > button').html("Select Types");
+			}
+			if((statuslength!=0) && (typeslength!=0)){
+				$(".config-info").show();
+				$("#showConfig").show();
+				$("#expand-close-config").removeClass("expandarrow");
+				$("#expand-close-config").addClass("closearrow");
+				$('.closearrow').attr('title','close');
+			} else {
+				$(".config-info").hide();
+				$("#showConfig").hide();
+			}
+			$('.issuetypeall').change(function () {
+				var flag = $(this).prop("checked");
+				if(flag==true){ 
+					$('.issuetypes div.ms-options-wrap > button').html("All"); 
+				}else{
+					$('.issuetypes div.ms-options-wrap > button').html("Select Types");
+				}
+				$(".issuetype").prop('checked', $(this).prop("checked"));
+				 typeslength = $('input[class="issuetype"]:checked').length;
+				 if((statuslength!=0) && (typeslength!=0)){
+					$(".config-info").show();
+					$("#showConfig").show();
+					$("#expand-close-config").removeClass("expandarrow");
+					$("#expand-close-config").addClass("closearrow");
+					$('.closearrow').attr('title','close');
+				} else {
+					$(".config-info").hide();
+					$("#showConfig").hide();
+				}	
+			}); 
+						
+			$('.issuetype').change(function(){ 
+				typeslength = $('input[class="issuetype"]:checked').length;
+				$(".issuetype").each(function() { 
+					if($(this).prop('checked')==false && typeslength<8){
+						$(".issuetypeall").prop('checked',false);
+					} else if(typeslength==8){
+						$(".issuetypeall").prop('checked',true);
+						$('.issuetypes div.ms-options-wrap > button').html("All"); 		
+					}
+				});
+			});
+			
+		});
+		
+		
+		$('#issuestatus').multiselect({
+			columns: 1,
+			placeholder: 'Select Statuses',
+			search: false,
+			selectAll: false
+		});
+		$('#issuetypes').multiselect({
+			columns: 1,
+			placeholder: 'Select Types',
+			search: false,
+			selectAll: false
+		});
+		$('#priority').multiselect({
+			columns: 1,
+			placeholder: 'Select Types',
+			search: false,
+			selectAll: false
+		});
+		$('.issuestatus div.ms-options > ul > li > ul > li').find(':checkbox').attr('name', 'status');
+		$('.issuestatus div.ms-options > ul > li > ul > li').find(':checkbox').attr('class', 'status');
+		$('.issuetypes div.ms-options > ul > li > ul > li').find(':checkbox').attr('name', 'issuetype');
+		$('.issuetypes div.ms-options > ul > li > ul > li').find(':checkbox').attr('class', 'issuetype');
+		$('.issuetypes div.ms-options > ul > li > ul > li input[value="All"]').attr('class', 'issuetypeall');
+		$(document).on("click", "#jira #instance-list-block .edit-config" , function() {
+			var issueStatusArray = [];
+			var issueTypesArray = [];
+			var typesArray = [];
+			var issueSelectedText = "";
+			var issueTypeText = "";	
+			formAction="update";
+			$("#expand-close").removeClass("closearrow");
+			$("#expand-close").addClass("expandarrow");
+			$('.expandarrow').attr('title','expand');
+			$("#showSetup").hide();
+			$("#expand-close-config").removeClass("closearrow");
+			$("#expand-close-config").addClass("expandarrow");
+			$('.expandarrow').attr('title','expand');
+			$(".config-info").show();
+			$("#showConfig").hide();			
+			$("#config-label").html('Steps you had executed to add this configuration. View for reference, if needed. Otherwise, steps need not be executed again.');
+			room_modified=false;
+			$("#submit-button").text("Save");
+			instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+				}
+			});
+			selected_room_id=instanceData.channelId;
+			room_id_old = instanceData.channelId;
+			loadJiraForm();
+			var config=JSON.parse(instanceData.configJson);
+			$("#webhookURL").val(config.webhookurl);
+			$('#displayName').val(config.displayName);
+			$('#instanceid').val(instanceId);
+			instanceUuid = instanceData.instanceUuid;
+			var notifications=config.notifications;
+			var status = notifications.issuesStatus;
+			var issuetype = notifications.isuuesType;
+			console.log("types in edit mode "+issuetype)
+			if ($.isArray(status)) {
+				$.each(status, function(index, value) {
+					issueStatusArray.push(value);
+					$("input[type=checkbox][value="+ value + "]").prop("checked", true);	
+				});
+			} else {
+				issueStatusArray.push(status);
+				$("input[type=checkbox][value="+ status+ "]").prop("checked", true);
+			}
+			issueSelectedText = issueStatusArray.join(',');
+			if ($.isArray(issuetype)) {
+				$.each(issuetype, function(index, value) {
+					issueTypesArray.push(value);
+					if($("input[type=checkbox][value]")==value)
+						$("input[type=checkbox][value="+ value + "]").prop("checked", true);
+					else typesArray.push(value);
+				});
+			} else {
+				issueTypesArray.push(issuetype);
+				if(issuetype=="All"){
+					$("input[type=checkbox][value="+ issuetype+ "]").prop("checked", true);
+					$(".issuetype").prop('checked',true);
+				}else{
+					$("input[type=checkbox][value="+ issuetype+ "]").prop("checked", true);
+				}
+			}
+			if ($.isArray(typesArray)) {
+				$.each(issuetype, function(index, value) {
+					$("#issue-types-options").append($('<option>').text(value).attr('value',value).prop('selected', true));
+					$('#issuetypes').multiselect('reload');
+					$('.issuetypes div.ms-options > ul > li > ul > li').find(':checkbox').attr('name', 'issuetype');
+					$('.issuetypes div.ms-options > ul > li > ul > li').find(':checkbox').attr('class', 'issuetype');
+					$('.issuetypes div.ms-options > ul > li > ul > li input[value="All"]').attr('class', 'issuetypeall');
+				});
+			}
+			issueTypeText = issueTypesArray.join(',');
+			$('.issuestatus div.ms-options-wrap > button').html(issueSelectedText);
+			$('.issuetypes div.ms-options-wrap > button').html(issueTypeText);
+		});		
+	}); 
+	function loadJiraForm(){
+		$(".issuetypeall").prop('checked',false);
+		$("#form").trigger("reset");
+		$('#integrations-block').hide();
+		$("#integration-form").show();
+		$(".edit-roomconfig-info").hide();
+		//$(".rooms-loading").show();
+		loadConfigurationSettings
+		
+		
+			//getAllSparkRooms();
+    }
+	function loadConfigurationSettings() {
+		//if(ui_settings["sparkRoomSettings"]){
+		var roomFlag=false;
+		var rooms =  {"Rooms":[{"id":"room0","title":"Room0"},{"id":"room1","title":"Room1"},{"id":"room2","title":"Room2"},{"id":"room3","title":"Room3"}]};
+		if(formAction!="update") {
+			webhookUrl = ui_settings["integrationSpecificSettings"]["webhookDetails"].webhookUrl;
+			$('#webhookURL').val(webhookUrl);
+			$('.webhookUrl').html(webhookUrl);
+			instanceUuid = ui_settings["integrationSpecificSettings"]["webhookDetails"].instanceUuid;
+		}
+		$('#rooms')[0].options.length = 1;
+			/*rooms = ui_settings["sparkRoomSettings"].items;
+			if(allRooms.length !=0) {
+				rooms = allRooms;
+				$(".rooms-loading").hide();
+			} */
+			//$("#rooms").customselect("destroy");
+		$.each(rooms, function(id,obj){
+			$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+			
+		});
+		
+		$("#rooms").val(selected_room_id);
+		$('.custom-select span').html($("#rooms option:selected").text());
+		selected_room_id="0";
+		$("#rooms").customselect();
+		/*}else{
+			alert("We've experienced some difficulty. Try again.");
+		}*/
+	}
+	function loadWebhookSettings(){
+		$.ajax({
+				url: configuration_settings_url+"?userId="+user_id,
+				async: true,
+				success: function(result){
+					if(formAction!="update") {
+						webhookUrl = result["integrationSpecificSettings"]["webhookDetails"].webhookUrl;
+						$('#webhookURL').val(webhookUrl);
+						$('.webhookUrl').html(webhookUrl);
+						instanceUuid = result["integrationSpecificSettings"]["webhookDetails"].instanceUuid;
+					}
+				},
+				 error: function(xmlHttpRequest,error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   }else{
+						$('#integration-form').html("We've experienced some difficulty. Try again.");
+						$('#integration-form').hide();
+						alert("We've experienced some difficulty. Try again.");
+					}
+				}
+			});
+	}
+	function validateConfiguration(instance, notifications, configNotifications, flag){
+	    console.log("validating Configuration...." + flag);
+		var configData = JSON.parse(instance.configJson);
+		var configEvents = configNotifications;
+		var notificationsLength = notifications.length;
+		var matchCount = 0;
+		configFlag = false;
+		if(flag=="issuestatus"){issueStatusMatchFlag = true;}else{issueStatusMatchFlag=false;}
+		if(flag=="issuetype"){issueTypeMatchFlag = true;console.log("type notifications.." + notifications);}else{issueTypeMatchFlag=false;}
+		if(instance.channelId==room_id){
+			console.log("matched...room");
+			configFlag = true;
+		}
+		if($.isArray(notifications)){
+			console.log("configEvents..." + configEvents +"length...." + configEvents.length);
+			if($.isArray(configEvents)){
+				for (var p in notifications) {
+					if(configEvents[p] != notifications[p]){
+						if(flag=="issuestatus"){issueStatusMatchFlag = false;}else{issueTypeMatchFlag=false;}
+						console.log("Match: " + configEvents[p] + "!=" + notifications[p]);
+					}else {
+						matchCount = matchCount +1;
+					   console.log("Match: " + configEvents[p] + "==" + notifications[p]);
+					}
+					console.log("match count..." + matchCount + "configEvents.length..." + configEvents.length);
+					if(matchCount==configEvents.length&&notificationsLength==configEvents.length){
+						if(flag=="issuestatus"){issueStatusMatchFlag = true;console.log("events match..." + issueStatusMatchFlag);}else{issueTypeMatchFlag=true;console.log("events match..." + issueTypeMatchFlag);}
+						return false;
+					}else{
+					  if(flag=="issuestatus"){issueStatusMatchFlag = false;}else{issueTypeMatchFlag=false;}
+					}
+				}
+			}else{
+			    console.log("not matched...configEvents");
+				if(flag=="issuestatus"){issueStatusMatchFlag = false;}else{issueTypeMatchFlag=false;}
+			}
+		}else{
+			console.log("configEvents.." + configEvents + " notifi..." + notifications);
+			if($.isArray(configEvents)){
+			   if(flag=="issuestatus"){issueStatusMatchFlag = false;}else{issueTypeMatchFlag=false;}
+				console.log("not matched...array" + issueStatusMatchFlag + " " + issueTypeMatchFlag);
+			}else{
+			  if(configEvents==notifications){
+				if(flag=="issuestatus"){issueStatusMatchFlag = true;}else{issueTypeMatchFlag=true;}
+				 console.log("matched single.." + issueStatusMatchFlag + " " + issueTypeMatchFlag);
+			  }else{
+				if(flag=="issuestatus"){issueStatusMatchFlag = false;}else{issueTypeMatchFlag=false;}
+			  }
+			}
+		}
+	}
+	function saveJiraInstance() {
+		var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		var selectedIssueStatusName=$("#issuestatus option:selected").text();
+		var issueTypeEvents = "";
+		room_id = $("#rooms option:selected").val();;
+		var jsonData = {};			
+		jsonData["channelId"] = room_id;
+		jsonData["integrationId"] = integration_id;
+		jsonData["status"] = "ACTIVE";
+		jsonData["userId"] = user_id;
+		jsonData["instanceUuid"] = instanceUuid;
+		jsonData["messageFormat"]="JIRA Bot :"+"Hello...User";
+		var action_url = "";
+		var actionType = "";
+		postAddMessageToRoom(room_id,appName);		
+		if(formAction=="update") {
+			actionType="PUT";
+			jsonData["instanceId"] = $('#instanceid').val();
+			action_url=update_configuration_settings_url+instanceId;
+			if(room_id!=room_id_old) {
+				room_modified=true;
+				jsonData["messageToSpark"] = updateMessageToSpark;
+			} else {
+				room_modified=false;
+			}
+			jsonData["room_modified"] = room_modified;
+			jsonData["configJson"]=JSON.parse(instanceData.configJson);
+			$('.loading-first-block').html('Please wait while your Integration is being updated');
+		}else{
+			jsonData["configJson"]={};
+		    action_url = save_configuration_settings_url;
+			actionType="POST";
+			jsonData["messageToSpark"] = postMessageToSpark;
+			$('.loading-first-block').html('Please wait while your Integration is being set up');
+		}
+		jsonData["configJson"]["displayName"]= res.displayName;
+		jsonData["configJson"]["webhookurl"]= $("#webhookURL").val();
+		jsonData["configJson"]["notifications"]={};			
+		jsonData["configJson"]["notifications"]["issuesStatus"] = res.status;
+		if ($.isArray(res.issuetype)) {
+			var issueTypesArray = [];
+				$.each(res.issuetype, function(index, value) {
+				issueTypesArray.push(value);
+				});
+				if($.inArray('All', issueTypesArray)>-1){
+					jsonData["configJson"]["notifications"]["isuuesType"] = "All";
+					issueTypeEvents="All";
+				}else{
+					jsonData["configJson"]["notifications"]["isuuesType"] = res.issuetype;
+					issueTypeEvents = res.issuetype;
+				}
+		}else{
+					issueTypeEvents = res.issuetype;
+			jsonData["configJson"]["notifications"]["isuuesType"] = res.issuetype;
+		}
+		var jsonString = JSON.stringify(jsonData);
+		var statuslength = $('input[name="status"]:checked').length;
+		var typeslength = $('input[name="issuetype"]:checked').length;
+		var issueStatusNotifications = res.status;
+		var issueTypeNotifications = issueTypeEvents;
+		if(listResultData.length != 0 && statuslength !=0 && typeslength !=0){
+			$.each(listResultData, function(i, instance) {
+				var configData = JSON.parse(instance.configJson);
+		        var events = configData.notifications;
+				var statusEvents = events.issuesStatus;
+			    var issuetypeEvents = events.isuuesType;
+				var issueStatusFlag = "issuestatus";
+				var issueTypeFlag = "issuetype";
+				if(formAction=="update"&&instance.instanceId!=instanceId){
+				 validateConfiguration(instance, issueStatusNotifications, statusEvents, issueStatusFlag);
+				 statusFlag = issueStatusMatchFlag;
+				 validateConfiguration(instance, issueTypeNotifications, issuetypeEvents, issueTypeFlag);
+				 console.log("statusFlag.." + statusFlag);
+				 if(statusFlag==true&&issueTypeMatchFlag==true&&configFlag==true){
+					 console.log("issueStatusMatchFlag in cond.." + statusFlag + " issueTypeMatchFlag.. " + issueTypeMatchFlag +
+					 " config Flag.." + configFlag);
+						return false;
+					}
+				}
+				if(formAction!="update"){
+				 validateConfiguration(instance, issueStatusNotifications, statusEvents,issueStatusFlag);
+				 statusFlag = issueStatusMatchFlag;
+				 validateConfiguration(instance, issueTypeNotifications, issuetypeEvents,issueTypeFlag);
+				 console.log("statusFlag.." + statusFlag);
+				  if(statusFlag==true&&issueTypeMatchFlag==true&&configFlag==true){
+					 console.log("issueStatusMatchFlag in cond.." + statusFlag + " issueTypeMatchFlag.. " + issueTypeMatchFlag + 
+					 " config Flag.." + configFlag);
+						return false;
+					}
+				}
+			});
+		}
+		if($('#rooms').val()==0 || $('#rooms').val()==null){
+			alert("Please select Room");
+		} else if(typeslength==0){
+			alert("Please select IssueTypes");
+		} else if(statuslength==0){
+			alert("Please select IssueStatus");
+		} else if(listResultData.length != 0 && statusFlag==true && issueTypeMatchFlag==true && configFlag==true){
+			alert("Please Select different configuration.");
+		}else{
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({url: action_url+'?userId='+user_id,
+				async: true,
+				type: actionType,
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){
+					$('#success-integration').foundation('open');
+					$('#loading-block').foundation('close');
+				},
+				error: function(xmlHttpRequest, error) {
+				   if(xmlHttpRequest.readyState == 0 || xmlHttpRequest.status == 0) {
+					   return;
+				   } else{
+						$('#loading-block').foundation('close');
+						alert("We've experienced some difficulty. Try again.");
+					}
+				}
+			});
+			$('.loading-second-block').html('');
+		}
+	}
+</script>
+</head>
+<body data-whatinput="mouse">
+	<div class="integration-app" id="jira"><br>
+		<div class="rows large-12 medium-12 columns warning-msg" style="display:none;"></div>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading"><img class="spark-icon" src="" alt="....."></div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment while your app is loading</div>
+				<div class="loading-second-block">name and room name</div>
+				<div class="loading-bar"><div class="loading-background"></div>	</div>
+			</div>
+		</div>
+		<div id="list-loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading"><img class="spark-icon" src="" alt="....."></div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait...</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-bar"><div class="loading-background"></div>	</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-loading">
+				<img class="spark-icon" src="" alt=".....">
+			</div>
+			<div class="well-done-text">Well done!</div>
+			<div class="success-integration-first-block">Your configuration has been set up. Ensure that you have followed any additional instructions provided.</div>
+			<div class="large-5 medium-5 columns buttons-block">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="secondary button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns desktop-block">			    
+				<div class="row">
+					<div class="large-2 medium-2 columns"><img alt="" id="jira-icon" src=""/></div>
+					<div class="large-6 medium-6 columns" style="float:left;">
+						<label id="displayName-label"></label>
+						<label id="addedon-label"></label>
+					</div>
+				</div><br>
+				<div class="msg-labels"><label id="remove-msg"></label> <label id="remove-auth"></label></div>				
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button remove-integration-btn" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+			<div class="large-12 columns mobile-block">	
+				<div class="msg-labels"><label id="remove-msg-mobile"></label> <label id="remove-auth-mobile"></label></div>				
+				<div class="option-buttons remove-integration-buttons">
+					<label class="remove-popup-cancel"> 
+						<a href="#" id="cancel-remove-integration">cancel</a>
+					</label>
+					<label class="remove-popup-remove">
+						<a href="#" id="remove-integration-btn-mobile" class="remove-integration-btn">remove</a>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="instance-loading-block" class="row instance-loading-block" style="display: none;">
+				<div class="instances-loading">&nbsp;</div>
+				<div class="instances-loading-text"></div>
+			</div>
+			<div id="home" class="home">
+				<div class="row add-config-block">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns config-name"><label>JIRA Configurations</label></div>
+						<div class="large-6 medium-6 columns">
+							<button class="remove-all-btn" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+							<button class="secondary button" id="add-config">Add</button>
+						</div>					
+					</div>
+				</div>
+				<div id="instance-list-block" class="row instance-list-block"></div>
+			</div>
+		</div>
+		<div class="large-12 columns" id="integration-form" >
+			<div class="large-12 medium-12 columns edit-roomconfig-info" style="display:none">
+				<p><span class="info-icon" title=""> &nbsp;</span><span>Previously configured room does not exists.</span></p>
+			</div>
+			<form name="form" id="form" method="post">
+				<div class="row app-config-block">
+					<div class="large-12 medium-12 columns"><label class="heading-01">JIRA Configuration</label></div>	
+						<div class="large-12 medium-10 columns">
+							<div class="large-10 columns sub-config-block">
+								<div class="large-4 medium-6 columns">
+									<div class="large-5 medium-6 columns">
+										<label class="label-config">Issue Types:</label>
+									</div>
+									<div class="large-6 medium-6 columns left">
+										<input id="priorityItem" type="text">
+									</div>
+								</div>
+								<div class="large-4 medium-6 columns">
+									<div class="large-6 medium-6 columns">
+										<label class="label-config">Priority Change:</label>
+									</div>
+									<div class="large-6 medium-6 columns left">
+										<input id="priorityItem" type="text">
+									</div>
+									
+								</div>
+								<div class="large-2 medium-2 columns left">
+									<a href="javascript:void(0)" id="status_priority">Add</a>
+								</div>
+							</div>
+							<div class="large-10 columns sub-config-block">
+								<div class="large-4 medium-6 columns">
+									<select multiple="multiple" id="issuetypes" class="dropdown">
+												<optgroup id="issue-types-options" label="" >
+													<option value="All" >All</option>
+													<option value="bug">Bug</option>
+													<option value="change">Change</option>
+													<option value="story">Story</option>
+													<option value="task">Task</option>
+													<option value="epic">Epic</option>
+													<option value="incident">Incident</option>
+													<option value="servicerequest">Service Request</option>
+													<option value="problem">Problem</option> 
+												</optgroup>
+											</select>
+
+								</div>
+								<div class="large-4 medium-6 columns">
+									<select multiple="multiple" id="priority" class="dropdown">
+											<optgroup id="priority-options" label="" >
+												<option value="low" >Low</option>
+												<option value="medium">Medium</option>
+												<option value="high">High</option>
+												<option value="critical">Critical</option>
+											</optgroup>
+										</select>
+									
+								</div>
+								<div class="large-2 medium-2 columns left">
+									<span class="has-tip tip-right multicheckbox-tooltip" id="tooltip" title="IssueTypes, for which you'd receive notifications for this configuration. Choose 'All' checkbox, if you don't find your IssueTypes." data-tooltip><img class="tool-tip"></span>
+								</div>
+							</div>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-6 medium-6 columns items-config">
+										<div  class="large-9 medium-8 columns text left multicheckbox-input-small-mobile">
+										<div  class="large-5 medium-5 columns issuetypes">
+											<select multiple="multiple" id="issuetypes" class="dropdown">
+												<optgroup id="issue-types-options" label="" >
+													<option value="All" >All</option>
+													<option value="bug">Bug</option>
+													<option value="change">Change</option>
+													<option value="story">Story</option>
+													<option value="task">Task</option>
+													<option value="epic">Epic</option>
+													<option value="incident">Incident</option>
+													<option value="servicerequest">Service Request</option>
+													<option value="problem">Problem</option> 
+												</optgroup>
+											</select>
+										</div>	
+										<div  class="large-4 medium-4 left">
+											<span class="has-tip tip-right multicheckbox-tooltip" id="tooltip" title="IssueTypes, for which you'd receive notifications for this configuration. Choose 'All' checkbox, if you don't find your IssueTypes." data-tooltip><img class="tool-tip"></span>
+										</div>											
+									</div>
+								</div>
+								<div class="large-6 medium-6 columns items-config">
+										<div  class="large-9 medium-8 columns text left multicheckbox-input-small-mobile">
+									<div  class="large-5 medium-5 columns issuetypes">
+										<select multiple="multiple" id="priority" class="dropdown">
+											<optgroup id="priority-options" label="" >
+												<option value="low" >Low</option>
+												<option value="medium">Medium</option>
+												<option value="high">High</option>
+												<option value="critical">Critical</option>
+											</optgroup>
+										</select>
+									</div>	
+									<div  class="large-4 medium-4 left">
+										<span class="has-tip tip-right multicheckbox-tooltip" id="tooltip" title="IssueTypes, for which you'd receive notifications for this configuration. Choose 'All' checkbox, if you don't find your IssueTypes." data-tooltip><img class="tool-tip"></span>
+									</div>											
+								</div>
+								</div>
+							</div>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-3 medium-4 columns items-config">
+									<label class="label-config">Custom Issue Types:</label>
+								</div>
+								<div  class="large-5 medium-5 columns left">
+									<input type="text" id="customtype_field" name="customtype_field"/>
+								</div>
+								<div  class="large-2 medium-2 columns left">
+									<a href="javascript:void(0)" id="add_customtypes">Add</a>
+								</div>
+							</div>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-3 medium-4 columns items-config issue-transtioned-text">
+									<label class="label-config">Issue transitioned to:</label>
+								</div>
+								<div  class="large-9 medium-8 columns text left multicheckbox-input-small-mobile">											
+									<div  class="large-5 medium-5 columns issuestatus">
+										<select multiple="multiple" id="issuestatus" class="dropdown">
+											<optgroup id="issue-status-options" label="">
+												<option value="done" >Done</option>
+												<option value="inprogress" >In progress</option>
+												<option value="todo" >To Do</option>
+												<option value="awaitingapproval" >Awaiting approval</option>
+												<option value="waitingforsupport">Waiting for support</option>
+												<option value="resolved">Resolved</option>
+											</optgroup>
+										</select>
+									</div>	
+									<div  class="large-4 medium-4 left">
+										<span class="has-tip tip-right multicheckbox-tooltip" id="tooltip" title="IssueStatus, for which you'd receive notifications for this configuration" data-tooltip><img class="tool-tip"></span>
+									</div>
+								</div>	
+							</div>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-3 medium-4 columns items-config">
+									<label class="label-config">Custom Status:</label>
+								</div>
+								<div  class="large-5 medium-5 columns left">
+									<input type="text" id="customstatus_field" name="customstatus_field"/>
+								</div>
+								<div  class="large-2 medium-2 columns left">
+									<a href="javascript:void(0)" id="add_customstatus">Add</a>
+								</div>
+							</div>
+						</div>
+						<div class="large-12 medium-12 columns config-info" style="display:none;">
+							<p><span class="" id="expand-close-config" title=""> &nbsp;</span><span id="config-label">You have to be a JIRA admin to add this configuration. Please follow the below steps to add this configuration. You can add/edit/delete multiple configurations at anytime.</span></p>
+						</div>
+						<div id="showConfig" style="display:none;">
+							<div class="large-12 columns sub-config-block">
+								<div class="large-1 medium-1 columns step">
+									<label><b>Step A</b></label>
+								</div>
+								<div class="large-11 medium-11 columns step-text">
+									<p>Login into your JIRA account as Admin. Click on the settings icon and select <b>System</b> as shown.</p><br>
+									<img alt="" src="https://d24wgzqqegxpap.cloudfront.net/api/images/jira/jira-1.png" class="setup-image">
+								</div>
+							</div>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-1 medium-1 columns step">
+									<label><b>Step B</b></label>
+								</div>
+								<div class="large-11 medium-11 columns step-text">
+									<p>If you are requested to login, use your admin credentials.</p><br>
+									<img alt="" src="https://d24wgzqqegxpap.cloudfront.net/api/images/jira/jira-2.png" class="setup-image">
+								</div>
+							</div>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-1 medium-1 columns step">
+									<label><b>Step C</b></label>
+								</div>
+								<div class="large-11 medium-11 columns step-text">
+									<p>In the left panel under <b>ADVANCED</b> section, click on <b>WebHooks</b>.</p><br>
+									<img alt="" src="https://d24wgzqqegxpap.cloudfront.net/api/images/jira/jira-3.png" class="setup-image">
+								</div>
+							</div><br>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-1 medium-1 columns step">
+									<label><b>Step D</b></label>
+								</div>
+								<div class="large-11 medium-11 columns step-text">
+									<p>Click on <b>Create a WebHook</b> at top right corner. Enter <b>Name</b> of your choice. Paste below Webhook URL into the <b>URL</b> text box. In <b>Events</b> section text box, follow below Syntax to add projects for which you'd like to receive alerts.</p>
+									<p>Syntax: <b>Project=&lt;project-name&gt;</b> for single project and  
+										<b>Project=&lt;project-name&gt; OR Project=&lt;project-name&gt;</b> for multiple projects. Under <b>Issue</b>, select <b>created</b>, <b>updated</b> and <b>deleted</b>. Click <b>Save</b>.</p><br>
+											<div class="large-12 columns">
+												<div class="large-2 medium-2 columns">
+													<label style="margin:7px;">Webhook URL :</label>
+												</div>
+												<div class="large-10 medium-10 columns">
+													<input type="text" name="webhookURL" id="webhookURL" value="" readonly>
+													<a href="javascript:void(0)" id="copy">Copy URL</a>			
+												</div>
+											</div><br><br>
+											<img alt="" src="https://d24wgzqqegxpap.cloudfront.net/api/images/jira/jira-4.png" class="setup-image">
+											<img alt="" src="https://d24wgzqqegxpap.cloudfront.net/api/images/jira/jira-5.png" class="setup-image">
+								</div>
+							</div>
+						</div>
+				</div>	
+				<div class="row spark-config-block">
+					<div class="large-10 medium-10 columns">
+						<h3 class="heading-01">Spark Configuration</h3>
+						<div class="large-8 columns sub-config-block">
+							<div class="large-2 medium-3 columns small-mobile">
+								<label>Room</label>
+							</div>
+							<div class="large-5 medium-5 columns text left input-small-mobile">
+								<select name="room" id="rooms" class="custom-select">
+								<option value='0'>Please Select</option></select><span class="has-tip tip-right" id="tooltip" title="Room in which you'd like to receive notifications. Ensure newly created rooms have at least one message in it for it to show up here."
+									data-tooltip><img class="tool-tip"></span>
+							</div>
+							<div class="rooms-loading" style="display: none;"></div>
+						</div>
+						<div class="large-8 columns sub-config-block left">
+							<div class="large-2 medium-3 columns small-mobile config-optional">
+								<label>Configuration name (optional)</label>
+							</div>
+							<div class="large-5 medium-5 columns text left input-small-mobile">
+								<input type="text" name="displayName" id="displayName" class="integration-name"	value="">
+							</div>							
+						</div>
+						<input type="hidden" name="instanceid" id="instanceid" value="">			
+					</div>
+				</div>
+				<div class="row integration-config-block">
+					<div class="large-5 medium-5 columns"> &nbsp;</div>
+					<div class="large-4 medium-4 columns left">
+						<button id="cancel-button" class="button">Cancel</button>
+						<button id="submit-button" class="button secondary text">Add Integration</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+<footer>
+	<script src="https://d24wgzqqegxpap.cloudfront.net/api/js/jquery-customselect.js"></script>
+	<link href="https://d24wgzqqegxpap.cloudfront.net/api/css/jquery-customselect.css" rel="stylesheet" type="text/css">
+</footer>
+</html>

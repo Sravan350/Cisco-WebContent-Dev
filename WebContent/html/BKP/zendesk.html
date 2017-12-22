@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Zendesk Configuration</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="startintegration?load_file=IframeTest/css/collab-ui.min.css" rel="stylesheet" type="text/css"> 
+<link href="startintegration?load_file=IframeTest/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="startintegration?load_file=IframeTest/js/collab-formly.js"></script>
+<script src="startintegration?load_file=IframeTest/js/collab-ui.js"></script>
+<script type="text/javascript" src="startintegration?load_file=IframeTest/js/porthole.min.js"></script>
+<script type="text/javascript" src="startintegration?load_file=IframeTest/js/scripts.js"></script>
+
+<script>
+	var integration_token="";
+	var protocol = "http://";
+	var zendeskDomain = ".zendesk.com";
+	var sub_domain="";
+	var authenticatedEmailId = "example@abc.com";
+	var	isAuthenticated = true;
+	var domain = "";
+	iconName="zendesk.png";
+	
+	auth_url="applications";
+	token_url="tokendetails/zendesk";
+	save_spark_token_url="savetokendetails";
+	form_data_url="uisettings/zendesk";
+	post_form_data_url="saveintegration/zendesk";
+	list_instances_url="listinstances/zendesk";
+	update_form_data_url="updateintegration/zendesk";
+	delete_instance_url="deleteInstance";
+	removeall_integration_instances_url="zendesk/removeallinstances";
+	disconnect_integration_url="disconnectintegration";
+	
+    $( document ).ready(function() { 
+		if(action=="connect") {
+			$("#integrations-block").hide();
+			$('#protocolName').html(protocol);
+			$('#domainName').html(zendeskDomain);
+			$('#authenticate-block').show();
+			resize();
+		} else if(action=="disconnect") {
+			formAction="disconnect";
+			removeAllIntegrationInstances(formAction);
+		} else {
+			console.log("list");
+			listIntegrations();
+		}	
+
+        $('#get-authentication').click(function(e){
+			e.preventDefault();
+			sub_domain = $('#zendeskdomain').val();
+			domain=protocol+sub_domain+zendeskDomain;
+			console.log("domain..."+domain);
+			setZendeskAppAuthDetails(integration_id);			
+	    });
+	
+		$("#zendesk #rooms").on('change',function(){
+			room_modified=true;
+			console.log("room_modified....");
+		});			
+	
+		$("#zendesk #submit-button").click(function(e){
+			e.preventDefault();
+			saveZendeskInstance();
+		});
+		$("#zendesk #cancel-button").click(function (e){
+			e.preventDefault();			
+			$('#integration-form').hide();
+			$('#integrations-block').show();
+			resize();
+		});
+		$('#zendesk #add-config').click(function(e){
+			e.preventDefault();	
+			formAction="add";
+			$("#submit-button").text("Add Integration");
+			loadForm();
+		});
+
+	 
+		$(document).on("click", "#zendesk #instance-list-block .edit-config" , function() {
+			console.log("edit instance");
+			formAction="update";
+			room_modified=false;
+			$("#submit-button").text("Save");
+			instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+				}
+			});
+			selected_room_id=instanceData.channelId;
+			loadForm();
+			var config=JSON.parse(instanceData.configJson);
+			$('#description').val(config.description); 
+			room_id_old = instanceData.channelId;
+			var notifications = config.notifications;
+			console.log("notifications..."+JSON.stringify(notifications));
+			if($.isArray(notifications)) {
+				$.each(notifications,function(index,value){
+					$("input[type=checkbox][value="+value["value"]+"]").prop("checked",true);
+				});
+			} else {
+				$("input[type=checkbox][value="+notifications+"]").prop("checked",true);
+			}
+		});		
+	});
+	function setZendeskAppAuthDetails(int_id) {
+		var OAUTHURL    =   '';//specific integration app oauth url
+		var CLIENTID    =   '';
+		var TYPE        =   'code';
+		var SCOPE		=	'read%20write';
+		console.log("int_id.."+int_id);
+		$('#loading-block').foundation('open');
+		$.ajax({url: auth_url+"?integration_id="+int_id,
+			async:false,
+			success: function(result){
+				console.log("result"+JSON.stringify(result));
+				$('#loading-block').foundation('close');
+				CLIENTID=result.clientid;
+				OAUTHURL= result.authoriseurl;				
+				OAUTHURL=OAUTHURL.replace(/subdomain/i, sub_domain);			
+				OAUTHURL=OAUTHURL+'?client_id='+CLIENTID+'&response_type='+TYPE+'&scope='+SCOPE;
+				loginWithAuthDetails(OAUTHURL);	
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				console.log('error while getting authorization detals..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});		
+	}
+	function loginWithAuthDetails(oauthURL) {
+		console.log("OAUTHURL login url..."+oauthURL);
+        var win = window.open(oauthURL, "windowname1", 'width=800, height=600'); 
+        var pollTimer = window.setInterval(function() { 
+            try {
+				console.log("login. window.."+win.document.URL);
+                if (win.document.URL.indexOf("code") != -1) {
+                    window.clearInterval(pollTimer);
+                    var url =   win.document.URL;
+                    console.log("url"+url);
+                    accessCode =   gup(url, 'code');
+                    tokenType = gup(url, 'token_type');
+                    expiresIn = gup(url, 'expires_in');
+                    win.close();
+					saveIntegrationAppToken(accessCode);
+					saveSparkToken();
+                } 
+            } catch(e) {
+				console.log('error while getting authorization code..'+e);
+            }
+        }, 100);
+    }
+	function saveIntegrationAppToken(code) {
+		$('#loading-block').foundation('open');
+		$.ajax({url: token_url+"?code="+code+"&integration_id="+integration_id+"&token="+spark_token,
+			async:false,
+			success: function(result){
+				console.log(result);
+				$('#loading-block').foundation('close');
+				integration_token=result.access_token;
+				connectIntegration();
+				$('#authenticate-block').hide();			
+				loadZendeskForm();
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				console.log('error while saving token details..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});
+	}
+	function loadForm() {
+		loadZendeskForm();
+	}
+	function loadZendeskForm(){
+		console.log("spark_token.... "+spark_token);
+		$('#loading-block').foundation('open');
+		document.getElementById("form").reset();
+		console.log("testbjgbjhg");
+		$.ajax({url: form_data_url+"?token="+spark_token+"&integration_id="+integration_id,
+			async:true,
+			success: function(result){			
+				var profiles = $.parseJSON(result[1]);
+				var rooms = result[0].items;
+				//var repos = $.parseJSON(result[2]);
+				console.log("rooms...."+JSON.stringify(rooms));
+				console.log("zenDeskDomain+domain " + domain);
+				$('#zenDomain').val(domain);
+				$('#AuthEmailID').html(authenticatedEmailId);
+				$("input#userid").val(profiles["profile"].id);
+				$("input#username").val(profiles["profile"].displayName);
+				$('#rooms')[0].options.length = 1;			
+				$.each(rooms, function(id,obj){
+					if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+				});
+				$("#rooms").val(selected_room_id);
+				selected_room_id="0";
+				$('#integrations-block').hide();	
+				$('#integration-form').show();
+				$('#loading-block').foundation('close');
+				resize();
+			},
+            error: function (error) {
+				$('#loading-block').foundation('close');
+				$('#integration-form').hide();
+				$('#integrations-block').show();
+                console.log('error while loading integration form data..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+            }
+		});
+	}
+	function notification(event) {
+		this.field = "status";
+		this.operator = "is";
+		this.value = event;
+	}
+	
+	function saveZendeskInstance() {
+		var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		var jsonData = {};			
+		jsonData["room_id"] = $("#rooms option:selected").val();;									
+		jsonData["integration_id"] = integration_id;
+		jsonData["integration_token"] = integration_token;
+		jsonData["spark_token"] = spark_token;
+		jsonData["user_id"] = $("#userid").val();
+		var notifications=[];
+		if($.isArray(res.events)) {
+			for (var i = 0; i< res.events.length; i++) {
+				notifications.push(new notification(res.events[i]));
+			}
+		} else {
+			notifications.push(new notification(res.events));
+		}
+		jsonData["config"]={};
+		jsonData["config"]["room_name"]= selectedRoomName;
+		jsonData["config"]["user_name"] = $("#username").val();
+		jsonData["config"]["description"]= res.description;
+		jsonData["config"]["notifications"]=notifications;
+		var action_url;
+		if(formAction=="update") {
+			jsonData["instance_id"] = instanceId;
+			jsonData["room_modified"] = room_modified;
+			jsonData["room_id_old"] = room_id_old;
+			action_url=update_form_data_url;
+			console.log("update integration");
+		} else {
+			action_url=post_form_data_url;
+		}
+		var jsonString = JSON.stringify(jsonData);
+		console.log("jsonString..."+jsonString);
+
+		var notificationslength=objLength(res.events);
+		if($('#rooms').val()==0){
+			alert("Please select Room");
+		} else if(notificationslength==0) {
+			alert("Please select atleast one Event");
+		} else {
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({url: action_url,
+				async:true,
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){	
+					$('#success-integration').foundation('open');
+					$('#loading-block').foundation('close');
+				},
+				error: function (error) {
+					listIntegrations();
+					$('#loading-block').foundation('close');
+					console.log('error while saving integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-second-block').html('');
+		}
+		console.log(jsonString);
+	}
+</script>
+</head>
+<body>
+	<div class="integration-app" id="zendesk">
+		<br> <br>
+		<div id="loading-block" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-image">
+					<img src="startintegration?load_file=IframeTest/images/loadingImage.gif" alt=".....">
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your
+				integration has been set up and is ready to use.</div>
+
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="secondary button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns" style="width: 85%; height: 200px; ">
+				<div class="row">
+					<div class="large-1 medium-1 columns"><img alt="" src=""/>	</div>
+					<div class="large-6 medium-6 columns" style="float:left;"><span id="description-label">Zendesk</span><br>
+						<span id="addedon-label"></span>
+					</div>
+				</div><br>
+				<p id="remove-msg"></p> 
+				<p id="remove-auth"></p>
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home">
+				<div class="row">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns">Zendesk Configurations</div>
+						<div class="large-6 medium-6 columns">
+							<button class="button" id="add-config">Add</button>
+							<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+						</div>					
+					</div>
+				</div>
+				<hr>
+				<div id="instance-list-block" class="row"></div>
+			</div>
+		</div>
+		<div id="authenticate-block" style="display: none;">
+			<form name="form1" id="form1">
+			  <div class="large-12 columns">
+				<div class="row">
+				  <div class="large-4 medium-5 columns">
+							<h4><label><b>Zendesk Domain</b></label></h4></div>
+						<div class="large-8 medium-7 columns">
+						 <div class="large-1 medium-1 columns">
+                                    <span id="protocolName">http://</span>
+                                </div>
+                                <div class="large-8 medium-7 columns ">
+                                   <input type="text" id="zendeskdomain" name="zendeskdomain">
+                                </div><span id="domainName">.zendesk.com</span>
+					</div><br><br><br>
+                    </div></div>
+					<div class="row">
+					<div class="large-12 columns">
+						<div class="large-4 medium-5 columns">To use this
+							integration, you must connect your Zendesk account to Spark.</div>
+						<div class="large-8 medium-7 columns">
+							<button id="get-authentication" class="button">
+								<b>Authenticate your Zendesk Account</b>
+							</button>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+		<div class="large-12 columns" id="integration-form">
+		<form name="form" id="form" method="post">
+			<div class="row">
+				<div class="large-12 columns">
+				 <h3>Integration Settings</h3>
+					<div class="large-4 medium-4 columns">
+						<h4><label><b>Zendesk Domain</b></label></h4></div>
+					<div class="large-8 medium-6 columns" >
+						<div class="large-8 medium-8 columns ">
+						  <input type="text" name="zenDomain" id="zenDomain" readonly/>
+						</div>
+					</div>
+				</div>
+			</div><hr>
+			<div class="row">
+				<div class="large-12 columns">
+					<div class="large-6 medium-6 columns">
+						<b>Authentication</b>
+					</div>
+					<div class="large-3 medium-3 columns">
+						AuthenticatedTo:<span id="AuthEmailID"></div>
+					<hr>
+				</div>
+			</div>
+			<div class="row">
+					<div class="large-12 columns events">
+						<h4><label><b>Notifications</b></label></h4>
+						<div class="large-6 medium-6 columns events-sub">
+							Choose the Zendesk notifications you'd like to receive.
+						</div>
+						<div class="large-6 medium-6 columns">
+							<div id="notifications">
+								<label><input type="checkbox" name="events" value="new">Ticket Created</label>
+								<label><input type="checkbox" name="events" value="new">Updates to New tickets</label>
+								<label><input type="checkbox" name="events" value="open">Updates to Open tickets</label>
+								<label><input type="checkbox" name="events" value="pending">Updates to Pending tickets</label>
+								<label><input type="checkbox" name="events" disabled="disabled" value="onhold">Updates to On-Hold tickets</label>
+								<label><input type="checkbox" name="events" value="solved">Updates to Solved tickets</label>
+								<label><input type="checkbox" name="events" value="closed">Ticket Closed</label>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-12 columns">
+						<h3>Spark Configuration</h3>
+						<br>
+						<div class="large-8 medium-8 columns">
+							<div class="large-6 medium-6 columns">
+								<label><b>Room</b></label>
+							</div>
+							<div class="large-6 medium-6 columns">
+								<select name="room" id="rooms"><option value="0">Select</option></select>
+							</div>
+						</div>
+						<br>
+						<div class="large-8 medium-8 columns">
+							<div class="large-6 medium-6 columns">
+								<label><b>Description</b></label>
+							</div>
+							<div class="large-6 medium-6 columns">
+								<input type="text" name="description" id="description" value="">
+							</div>
+							<input type="hidden" name="userid" id="userid" value="">
+							<input type="hidden" name="username" id="username" value="">
+						</div>
+						<br>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-6 medium-6 columns"></div>
+					<div class="large-4 medium-4 columns"></div>
+					<div class="large-4 medium-4 columns">
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button" id="submit-button">Add Integration</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

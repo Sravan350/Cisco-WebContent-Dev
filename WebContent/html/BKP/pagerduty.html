@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>PagerDuty Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="http://183.82.99.100:7080/IframeTest/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="http://183.82.99.100:7080/IframeTest/css/collab-ui.min.css" rel="stylesheet" type="text/css">
+<link href="http://183.82.99.100:7080/IframeTest/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="http://183.82.99.100:7080/IframeTest/js/collab-formly.js"></script>
+<script src="http://183.82.99.100:7080/IframeTest/js/collab-ui.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/IframeTest/js/porthole.min.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/IframeTest/js/scripts.js"></script>
+
+<script type="text/javascript">
+	oauthRequired=false;
+    iconName="pagerduty.png";
+	form_data_url="uisettings/pagerduty";
+	post_form_data_url="saveintegration/pagerduty";
+	list_instances_url="listinstances/pagerduty";
+	update_form_data_url="updateintegration/pagerduty";
+	delete_instance_url="deleteInstance";
+	removeall_integration_instances_url="removeallinstances";
+	disconnect_integration_url="disconnectintegration";
+	save_spark_token_url = "savesparkaccesstoken";
+
+	$( document ).ready(function() {
+		 if(action=="connect") {
+				$("#integrations-block").hide();
+				$("#integration-form").hide();
+				saveSparkToken();
+				loadPagerdutyForm();
+			} else if(action=="disconnect") {
+				formAction="disconnect";
+				removeAllIntegrationInstances(formAction);		
+			} else {
+				console.log("list");
+				listIntegrations();
+			}	
+
+        $("#pagerduty #rooms").on('change',function(){
+			room_modified=true;
+			console.log("room_modified....");
+		});	
+			
+		$("#pagerduty #submit-button").click(function (e){
+			e.preventDefault();
+			savePagerdutyInstance();
+		});
+		$("#pagerduty #cancel-button").click(function (e){
+			e.preventDefault();			
+			$('#integration-form').hide();
+			$('#integrations-block').show();
+			resize();
+		});
+		$('#pagerduty #add-config').click(function(e){
+			e.preventDefault();	
+			formAction="add";
+			$("#submit-button").text("Add Integration");
+			loadPagerdutyForm();	
+		});
+		$('#close').click(function(e){
+			e.preventDefault();
+			if($(this).text()=='close'){
+				$('#showSetup').hide();
+				$(this).text('expand');
+			}else{
+				$('#showSetup').show();
+				$(this).text('close');
+			}
+			resize();
+		});
+		$(document).on("click", "#pagerduty #instance-list-block .edit-config" , function() {
+			console.log("edit instance");
+			formAction="update";
+			$("#submit-button").text("Save");
+			instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+				}
+			});
+			console.log("instanceData...."+JSON.stringify(instanceData));
+			selected_room_id=instanceData.channelId;
+			room_id_old = instanceData.channelId;
+			console.log("room_id_old = " + instanceData.channelId);
+			loadPagerdutyForm();
+			console.log("instanceData........."+instanceData);
+			console.log("instanceData.webhookUrl........."+instanceData.webhookUrl);
+			var config = JSON.parse(instanceData.configJson);
+			$("#rooms").val(instanceData.channelId);
+			$('#description').val(config.description);
+			$('#webhookURL').val(instanceData.webhookUrl);
+			$('#instanceid').val(instanceId);
+			var incidents = config.notifications;
+			if ($.isArray(incidents)) {
+				$.each(incidents, function(index, value) {
+					$("input[type=checkbox][value="+ value + "]").prop("checked", true);
+				});
+			} else {
+				$("input[type=checkbox][value="+ incidents+ "]").prop("checked", true);
+			}
+		});			
+    });
+	function loadPagerdutyForm(){
+		console.log("loadForm.....Entered");
+		console.log("spark_token.... "+spark_token);
+		document.getElementById("form").reset();
+		$('#loading-block').foundation('open');
+		$.ajax({
+			url: form_data_url+"?sparkAccessToken="+spark_token+"&integration_id="+integration_id,
+			async: true,
+			success: function(result){
+				$("#integration-form").show();
+				$('#integrations-block').hide();
+				var profiles = $.parseJSON(result[1]);
+				var rooms = result[0].items;
+				var data = $.parseJSON(result[2]);
+				var webhook_details = data.webhook_details;
+				console.log("rooms...."+JSON.stringify(rooms));
+				console.log("webhookurl obj...."+$.parseJSON(result[2]));
+				$("input#userid").val(profiles["profile"].id);
+				$("input#username").val(profiles["profile"].displayName);
+				console.log(webhook_details.webhook_url);
+				console.log(webhook_details.instance_uuid); 
+				if(formAction!="update") {
+					$("#instanceid").val(webhook_details.instance_uuid);
+					$("#webhookURL").val(webhook_details.webhook_url);
+				}
+				$('#rooms')[0].options.length = 1;
+				$.each(rooms, function(id,obj){
+				console.log(obj);
+					//if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+				});	
+				$("#rooms").val(selected_room_id);
+				selected_room_id="0";
+				console.log("$('#rooms').val(): " + $('#rooms').val());
+				$('#integrations-block').hide();				
+				$('#integration-form').show();	
+				$('#loading-block').foundation('close');
+				resize();		
+			},
+			error: function (error) {
+				 $('#loading-block').foundation('close');
+				 $('#integration-form').hide();
+				 $('#integrations-block').show();
+				 console.log('error while loading integration form data..' + error);
+				 alert('Some problem occured, Pleaase try after some time');
+			}
+		});			
+	}
+    function savePagerdutyInstance() {
+		var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		userId = $("#userid").val();
+		var jsonData = {};			
+		jsonData["room_id"] = $("#rooms option:selected").val();;									
+		jsonData["integration_id"] = integration_id;
+		jsonData["spark_token"] = spark_token;
+		jsonData["refresh_token"] = "";
+		jsonData["user_id"] = $("#userid").val();
+		jsonData["config"]={};
+		jsonData["config"]["room_name"]= selectedRoomName;
+		jsonData["config"]["user_name"] = $("#username").val();
+		jsonData["webhook_details"]={};
+		jsonData["webhook_details"]["webhook_url"]= $("#webhookURL").val();
+		jsonData["webhook_details"]["instance_uuid"]= $("#instanceid").val();
+		jsonData["config"]["description"]= res.description;
+		jsonData["config"]["notifications"]={};	
+		jsonData["config"]["notifications"]=res.incidents;
+		console.log("formAction.."+formAction);
+		console.log(" Add jsonData.."+jsonData);
+		var action_url;
+		if(formAction=="update") {
+			jsonData["room_id_old"] = room_id_old;
+			jsonData["room_modified"] = room_modified;
+			action_url = update_form_data_url;
+			console.log("formAction.."+formAction);
+			console.log(" Update jsonData.."+jsonData);
+		}else{
+		action_url = post_form_data_url;
+		}
+		var jsonString = JSON.stringify(jsonData);
+		var notificationslength = objLength(res.incidents);
+		console.log("$('#rooms').val(): " + $('#rooms').val());
+		if($('#rooms').val()==0){ 
+		    alert("Please select Room");
+		}else if(notificationslength==0) {
+			alert("Please select atleast one Incident");
+		} else { 
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({url: action_url,
+				async: true,
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){
+					$('#loading-block').foundation('close');
+					$('#success-integration').foundation('open');
+				},
+				error: function (error) {
+					listIntegrations();
+					$('#loading-block').foundation('close');
+					console.log('error while saving integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-second-block').html('');
+		}
+		console.log(jsonString);
+	}
+
+</script>
+</head>
+<body>
+<div class="integration-app" id="pagerduty"><br><br>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment	while your app is loading</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-image">
+					<img src="http://183.82.99.100:7080/IframeTest/images/loadingImage.gif" alt=".....">
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your integration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+		<div class="large-12 columns" style="width: 85%; height: 200px;">
+			<div class="row">
+				<div class="large-1 medium-1 columns"><img alt="icon" src="http://183.82.99.100:7080/IframeTest/images/pagerduty.png">	</div>
+				<div class="large-6 medium-6 columns" style="float:left;"><span id="description-label">PagerDuty</span><br>
+					<span id="addedon-label"></span>
+				</div>
+			</div><br>
+			<p id="remove-msg"></p> 
+			<p id="remove-auth"></p>
+			<button class="close-button" data-close aria-label="Close modal" type="button">
+				<span aria-hidden="true">&times;</span>
+			</button><br><br>
+			<div class="row">
+				<div class="large-8 medium-5 columns"></div>
+				<div class="large-4 medium-4 columns"><button class="button" id="remove-integration-btn">Remove</button></div>
+			</div>
+		</div>
+		</div>
+	<div class="integrations" id="integrations-block">
+		<div id="home">
+			<div class="row">
+				<div class="large-12 medium-12 columns">							
+					<div class="large-6 medium-6 columns">PagerDuty Configurations</div>
+					<div class="large-6 medium-6 columns">
+						<button class="button" id="add-config">Add</button>
+						<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+					</div>					
+				</div>
+			</div>
+			<hr>
+			<div id="instance-list-block" class="row">	
+			
+			</div>
+		</div>
+	</div>
+	<div class="large-12 columns" id="integration-form" >
+			<form name="form" id="form" method="post">
+			<div class="row">
+					<h3>Setup Instructions</h3>
+					<div class="large-12 medium-10 columns">
+						<div class="large-6 medium-6 columns">
+							<p>Here are the steps necessary to add the PagerDuty integration.</p>
+						</div>
+						<div class="large-6 medium-6 columns">
+ 					  		<div class="large-6 medium-6 columns"></div>
+  							<div class="large-1 medium-1 columns">
+								<button class="button" id="close">close</button>
+ 							 </div>
+						</div>
+					</div><br><hr>
+					<div  id="showSetup">
+						<div class="large-12 columns">
+							<div class="large-3 medium-3 columns">
+							<h3><label><b>Step 1</b></label></h3>
+							</div>
+						<div class="large-9 medium-9 columns">
+							<p>
+									In your PagerDuty account, click on <b>Services</b> in the top navigation bar. Next, click on the service you would like to monitor and press the <b>Settings</b> tab under service you are created.
+								</p>
+								<img alt="webhook" src="http://183.82.99.100:7080/IframeTest/images/webhook.png" style="height: 200px;width: 350px;margin: 0;"><br><br>
+						</div>
+						</div><br><hr>
+						<div class="large-12 columns">
+							<div class="large-3 medium-3 columns">
+							<h3><label><b>Step 2</b></label></h3>
+							</div>
+						<div class="large-9 medium-9 columns">
+							<p>
+									Give it a <b>Name</b> and add below <b>Webhook URL</b> as the Endpoint URL. Press the <b>Save</b> button to finish adding the Webhook.
+								</p>
+								<img alt="webhook" src="http://183.82.99.100:7080/IframeTest/images/addinghook.png" style="height: 200px;width: 750px;margin: 0;"><br><br>
+						</div>
+						</div><br><hr>
+						<div class="large-12 columns">
+							<div class="large-3 medium-3 columns">
+							<h3><label><b>Step 3</b></label></h3>
+							</div>
+						<div class="large-9 medium-9 columns">
+							<p>Return to the Spark integration page (this page) and choose the PagerDuty incidents to monitor by selecting the checkboxes in the PagerDuty Configuration box below. Press the Save Integration button when you're done.</p>
+						</div>
+						</div><br><hr>
+					</div>
+			</div>
+			<div class="row">
+				<div class="large-12 columns">
+				<h3>PagerDuty Configuration</h3><br>
+					<h4><label><b>Incidents to monitor</b></label></h4>
+					<div class="large-6 medium-6 columns">
+							Choose the incidents you'd like to receive events for.
+					</div>
+					<div class="large-6 medium-6 columns events" >
+						<div id="incidents" >
+						<label><input type="checkbox" name="incidents" value="trigger">Newly triggered</label>
+						<label><input type="checkbox" name="incidents" value="acknowledge">Acknowledged</label>
+						<label><input type="checkbox" name="incidents" value="unacknowledge">Unacknowledged</label>
+						<label><input type="checkbox" name="incidents" value="resolve">Resolved</label>
+						<label><input type="checkbox" name="incidents" value="assign">Manually reassigned</label>
+						<label><input type="checkbox" name="incidents" value="escalate">Escalated</label>
+						<label><input type="checkbox" name="incidents" value="delegate">Reassigned to another escalation chain</label>
+						</div>
+					</div>
+				</div><hr>
+				<div class="large-12 columns">
+					<div class="large-4 medium-4 columns">
+						<label><b>Webhook URL </b></label>
+					</div>
+					<div class="large-8 medium-8 columns">
+						<input type="text" id="webhookURL" readonly name="webhookURL"/>					
+					</div>
+				</div>
+			</div><hr>
+			<div class="row">
+					<div class="large-12 columns">
+						<h3>Spark Configuration</h3>
+						<br>
+						<div class="large-8 medium-8 columns">
+							<div class="large-6 medium-6 columns">
+								<label><b>Room</b></label>
+							</div>
+							<div class="large-6 medium-6 columns">
+								<select name="room" id="rooms">
+								<option value="0">Select</option>
+								</select>
+							</div>
+						</div>
+						<br>
+						<div class="large-8 medium-8 columns">
+							<div class="large-6 medium-6 columns">
+								<label><b>Description</b></label>
+							</div>
+							<div class="large-6 medium-6 columns">
+								<input type="text" name="description" id="description"	value="PagerDuty">
+							</div>
+							<input type="hidden" name="userid" id="userid" value="">
+							<input type="hidden" name="username" id="username" value="">
+							<input type="hidden" name="instanceid" id="instanceid" value="">
+						</div>
+						<br>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-6 medium-6 columns"></div>
+					<div class="large-4 medium-4 columns"></div>
+					<div class="large-4 medium-4 columns">
+						<button class=" button" id="cancel-button">Cancel</button>
+						<button class=" button" id="submit-button">Save Integration</button>
+					</div>
+				</div>
+			</form>
+	</div>
+</div>
+</body>
+</html>

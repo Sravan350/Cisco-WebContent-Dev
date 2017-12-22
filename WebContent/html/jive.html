@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Jive Configuration</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/jquery-customselect.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/jquery-customselect.css" rel="stylesheet" type="text/css">
+
+<script>
+integration_app_icon_url="https://183.82.99.100:8443/CiscoWebcontent/images/jive/jive.png";
+var spark_icon_url="https://183.82.99.100:8443/CiscoWebcontent/images/spark-icon.png";
+var protocol = "http://";
+var domain = ".jive.com";
+var selectedRoomName = "";
+var displayName = "";
+
+$( document ).ready(function() { 	
+	$('#integrations-block').show();
+	$('#integration-form').hide();
+});
+	
+var OAUTHURL    =   '';
+var CLIENTID    =   '';
+var TYPE        =   'code';
+
+var auth_url="applications";
+var token_url="tokendetails/bitbucket";
+var form_data_url="test.html";
+var post_form_data_url="test.html";
+var list_instances_url="test.html";
+var update_form_data_url="test.html";
+var delete_instance_url="deleteInstance";
+var removeall_integration_instances_url="bitbucket/removeallinstances";
+var disconnect_integration_url="disconnectintegration";
+
+var integration_id="";
+var integration_token="";
+var spark_token="";
+var listResultData="";
+var instanceData="";
+var formData="";
+var formAction="add";
+var instanceId="";
+var repo_modified=false;
+var room_modified=false;
+var repo_name_old="";
+var room_id_old="";
+
+function listIntegrations() {
+	$("#integration-form").hide();
+	var listDataHTML="";			
+	$.ajax({		
+		url: list_instances_url,
+		async: false,
+		success: function(result){	
+			$("#instance-list-block").show();
+			console.log("in success before if");
+			console.log("localStorage.getItem('JiveFormData') " + localStorage.getItem("JiveFormData"));
+			if(localStorage.getItem("JiveFormData")==null){
+				console.log("in success if");
+				$("#instance-list-block").html(listDataHTML);
+			}else{
+				 console.log("in success else");
+				   	listDataHTML+='<div class="large-12 medium-12 columns instance-background"><br>';
+					listDataHTML+='<div class="large-8 medium-8 columns integration-details">';
+					listDataHTML+='<img src="'+integration_app_icon_url+'" alt="">';
+					listDataHTML+='<label>'+displayName+'</label>';
+					listDataHTML+='<label>'+selectedRoomName+'</label>';
+					listDataHTML+='<label class="date">Added: 27th Jul 2016</label>';
+					listDataHTML+='</div>';
+					listDataHTML+='<div class="large-2 medium-2 columns edit-remove-icons">';
+					listDataHTML+='<span class="cross-mark remove-config" data-open="remove-integration-popup" id="123456"></span>';
+					listDataHTML+='<a class="edit-config" id="56789">Edit</a>';
+					listDataHTML+='</div>';
+					listDataHTML+='</div><hr class="instance-hr">';	
+					 $("#instance-list-block").html(listDataHTML);
+		  }
+		}
+	});		
+}
+function objLength(obj){
+	var i=0;
+	for (var x in obj){
+		if(obj.hasOwnProperty(x)){
+			i++;
+		}
+	} 
+	return i;
+}
+function addOrUpdateInstance() {
+	authenticate = "success";
+	$("#submit-button").text("Add Integration");
+	var res = $('form').serializeObject();
+	selectedRoomName=$("#rooms option:selected").text();
+	displayName = $('#displayName').val();
+	res = JSON.stringify($('form').serializeObject());
+	console.log(res);
+	localStorage.setItem("JiveFormData",res);
+		$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+		$('#loading-block').foundation('open');
+		$.ajax({
+			url: post_form_data_url,
+			async: false,
+			success: function(result){				
+				$('#success-integration').foundation('open');
+				$('#done-button').click(function() {
+					$('#success-integration').foundation('close');
+					$("#integration-form").hide();
+					listIntegrations();
+					$("#integrations-block").show();
+				});
+			},
+			error: function (error) {
+				alert('error while saving data' + error);
+			}
+		});
+		$('#loading-block').foundation('close');
+}
+
+ jsonData= {"jivesubdomain":"eidiko",
+			"Rooms":[{"id":"Please Select","name":"Please Select"},{"id":"room1","name":"Room1"},{"id":"room2","name":"Room2"},{"id":"room3","name":"Room3"}],
+			"displayName":""};
+function loadForm(){
+	$('#loading-block').foundation('open');
+	document.getElementById("form").reset();
+	$.ajax({
+		url: form_data_url,
+		async: false,
+		success: function(result){
+			$('#integrations-block').hide();
+			$('#authenticate-block').hide();
+			$('#integration-form').show();	
+			var rooms = jsonData.Rooms;
+			var displayName = jsonData.displayName;	
+			$('#rooms')[0].options.length = 0;
+			$.each(rooms, function(id,obj){
+				$("#rooms").append($('<option>').text(obj.name).attr('value',obj.id));
+			});
+			$("#displayName").val(displayName); 
+			$("#rooms").customselect();
+		},
+        error: function (error) {
+            alert('error while loading the form data' + error);
+			$('#integration-form').hide();
+			$('#integrations-block').show();				
+        }
+	});
+	$('#loading-block').foundation('close');
+}
+var	authenticate = "";
+$(document).ready(function(){
+	
+	$('#integration-form').hide();
+	$(document).foundation();
+	$("#rooms").on('change',function(){
+		room_modified=true;
+		console.log("room_modified....");
+	});		
+	$("#jive-icon").attr("src", integration_app_icon_url);
+	$(".spark-icon").attr("src", spark_icon_url);	
+	$.fn.serializeObject = function() {
+		var o = {};
+		var a = this.serializeArray();
+		$.each(a, function() {
+			if (o[this.name] !== undefined) {
+				if (!o[this.name].push) {
+					o[this.name] = [o[this.name]];
+				}
+				o[this.name].push(this.value || '');
+			} else {
+				console.log(this);
+				o[this.name] = this.value || '';
+			}
+		});
+		return o;
+	};
+	$("#submit-button").click(function(e){
+		e.preventDefault();
+		addOrUpdateInstance();
+	});
+	$("#cancel-button").click(function (e){
+		e.preventDefault();			
+		$('#integration-form').hide();
+		$('#integrations-block').show();
+	});
+	$('#add-config').click(function(e){
+		e.preventDefault();	
+		if(authenticate == "success"){
+			loadForm();
+		}else{
+		var jivesubdomain = jsonData.jivesubdomain;
+		$('#jivesubdomain').val(jivesubdomain);
+		$('#protocolName').html(protocol);
+		$('#domainName').html(domain);
+		$('#integrations-block').hide();	
+		$('#authenticate-block').show();
+		}
+	});
+	 $('#get-authentication').click(function(e){
+		 e.preventDefault();
+		   $('#authenticate-block').hide();
+		   loadForm();
+		   jivesubdomain = $('#jivesubdomain').val();
+		   $('#jivedomain').val(jivesubdomain+domain);
+		  
+	   });
+	 
+	$(document).on("click", "#instance-list-block .edit-config" , function() {
+		console.log("edit instance");
+		repo_modified=false;
+		room_modified=false;
+		$("#submit-button").text("Save");
+		document.getElementById("form").reset();
+		loadForm();
+		$('#saveIntegationDiv').show();
+		$('#editconfigDiv').hide();
+		$('#Jivehome').hide();
+		formData = localStorage.getItem("JiveFormData");
+		var json = JSON.parse(formData);
+		console.log("From localStorage variable:"+ JSON.stringify(json));
+		$("#rooms").val(json.room);
+		$('#displayName').val(json.displayName);
+		$('#jivedomain').val(json.jivedomain);
+		var events = json.events;
+		if($.isArray(events)) {
+			$.each(events,function(index,value){
+				$("input[type=checkbox][value="+value+"]").prop("checked",true);
+		    });
+		} else {
+			$("input[type=checkbox][value="+events+"]").prop("checked",true);
+		}
+	});
+
+	$(document).on("click", "#instance-list-block .remove-config" , function() {
+			console.log("on click remove");
+			$("#displayName-label").html(displayName);
+			$("#addedon-label").html("Added on: 27th Jul 2016");
+			$("#remove-msg").html("Are you sure you  want to remove integration from "+selectedRoomName+" room?");	
+			formAction="remove";
+			$('#remove-integration-btn').text("Remove");			
+	});
+	$(document).on("click", "#remove-all-config" , function() {
+		console.log("test remove all");
+		document.getElementById('remove-msg').innerHTML="Are you Sure you  want to remove all the integration instances?";
+		formAction="removeAll";			
+		resize();
+	});
+	$('#cancel-remove-integration').click(function(e){
+			e.preventDefault();
+			$('#remove-integration-popup').foundation('close');
+		});		
+		$('#remove-integration-btn').click(function(e){
+			e.preventDefault();
+			$('#remove-integration-popup').foundation('close');
+			if(formAction=="removeAll") {
+				removeAllIntegrationInstances("remove");
+			} else { 
+				removeIntegrationInstance();
+			}
+		});	
+
+});
+		function removeIntegrationInstance(instanceId) {
+			$('.loading-second-block').html('Removing integration for the room '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({
+				url:'test.html',
+				success: function(result){		
+					console.log("removeIntegrationInstance");
+					localStorage.removeItem("JiveFormData");
+					$('#instance-list-block').hide();
+					listIntegrations();
+					$('#loading-block').foundation('close');
+				},
+				error: function (error) {
+					$('#loading-block').foundation('close');
+					console.log('error while removing integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-second-block').html('');
+	    }
+</script>
+</head>
+<body>
+	<div class="integration-app"><br>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading"><img class="spark-icon" src="" alt="....."></div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment while your app is loading</div>
+				<div class="loading-second-block">name and room name</div>
+				<div class="loading-bar"><div class="loading-background"></div>	</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-loading">
+				<img class="spark-icon" src="" alt=".....">
+			</div>
+			<div class="well-done-text">Well done!</div>
+			<div class="success-integration-first-block">Your configuration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns buttons-block">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="secondary button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns desktop-block">			    
+				<div class="row">
+					<div class="large-2 medium-2 columns"><img alt="" id="jive-icon" src=""/></div>
+					<div class="large-6 medium-6 columns" style="float:left;">
+						<label id="displayName-label"></label>
+						<label id="addedon-label"></label>
+					</div>
+				</div><br>
+				<div class="msg-labels"><label id="remove-msg"></label> <label id="remove-auth"></label></div>				
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button id="remove-integration-btn" class="button remove-integration-btn" style="float:right">Remove</button>
+			</div>
+			<div class="large-12 columns mobile-block">	
+				<div class="msg-labels"><label id="remove-msg-mobile"></label> <label id="remove-auth-mobile"></label></div>				
+				<div class="option-buttons remove-integration-buttons">
+					<label class="remove-popup-cancel"> 
+						<a href="#" id="cancel-remove-integration">cancel</a>
+					</label>
+					<label class="remove-popup-remove">
+						<a href="#" id="remove-integration-btn-mobile" class="remove-integration-btn">remove</a>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home">
+				<div class="row add-config-block">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns config-name"><label>Jive Configuration</label></div>
+						<div class="large-6 medium-6 columns">
+							<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+							<button class="secondary button" id="add-config">Add</button>
+						</div>					
+					</div>
+				</div>
+				<div id="instance-list-block" class="row instance-list-block">						
+				</div>
+			</div>
+		</div>
+		<div id="authenticate-block" style="display: none;">
+			<form name="form1" id="form1">
+				<div class="row">
+					<div class="large-2 medium-2 columns"><h4><label>Jive Domain</label></h4></div>
+					<div class="large-8 medium-6 columns" >
+						<div class="large-1 columns medium-1">
+							<span id="protocol"></span>
+						</div>
+						<div class="large-6 medium-6 columns ">
+							<input type="text" name="jivesubdomain" id="jivesubdomain"/>
+						</div><span id="domainName"></span>
+					</div><br><br><br>
+				</div>
+				<div class="row">
+					<div class="large-12 columns">
+						<div class="large-6 medium-6 columns">To use this
+							integration, you must connect your Jive account to Spark.</div>
+						<div class="large-6 medium-6 columns">
+							<button id="get-authentication" class="button">
+								<b>Authenticate your Jive Account</b>
+							</button>
+						</div>
+					</div>
+				</div>
+			</form>
+		</div>
+		<div class="large-12 columns" id="integration-form">
+			<div class="authenticted-block">Authenticated to Jive as: <span id="authenticted-to"></span></div>
+			<form name="form" id="form" method="post">
+				<div class="row">
+				<div class="large-12 columns">
+					<div class="large-2 medium-2 columns"><h4><label><b>Jive Domain</b></label></h4></div>
+						<div class="large-9 medium-9 columns" >
+							<div class="large-6 medium-6 columns ">
+							  <input type="text" name="jivedomain" id="jivedomain" readonly/>
+							</div>
+						</div>
+					</div>
+				</div><br>
+				<div class="row app-config-block">
+					<label class="heading-01">Jive Configuration</label>
+					<div class="large-12 columns sub-config-block">
+						<div class="large-12 medium-12 columns events">
+							<label>System webhooks:</label>
+							<div id="events" class="events-sub">
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="user_account" name="events" value="user_account"/><label for="user_account">User Account</label></div>
+									<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="user_session" name="events" value="user_session"/><label for="user_session">User Session </label></div>	
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="user_membership" name="events" value="user_membership"/><label for="user_membership">User Membership</label></div>
+									<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="social_group" name="events" value="social_group"/><label for="social_group">Social Group</label></div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="stream" name="events" value="stream"/><label for="stream">Stream</label></div>	
+									<div class="large-3 medium-3 columns checkbox"><input type="checkbox" id="webhook" name="events" value="webhook"/><label for="webhook">Webhook</label></div>	
+								</div>								
+							</div>
+						</div>
+					</div>
+				</div><hr>
+				<div class="row">
+					<div class="large-10 medium-10 columns">
+						<h3 class="heading-01">Spark Configuration</h3>
+						<br> 
+					<div class="large-8 columns">
+						<div class="large-2 medium-2 columns small-mobile">
+							<label>Room</label>
+						</div>
+						<div class="large-5 medium-5 columns text left input-small-mobile">
+							<select name="room" id="rooms" class="custom-select">
+							<option value='0'>Please Select</option></select><span class="has-tip tip-right" id="tooltip" title="Room, to which would you like to receive notifications for?"
+								data-tooltip><img class="tool-tip"></span>
+						</div>
+					</div><br><br>
+					<div class="large-8 columns">
+						<div class="large-2 medium-2 columns small-mobile">
+							<label>Name</label>
+						</div>
+						<div class="large-5 medium-5 columns text left input-small-mobile">
+							<input type="text" name="displayName" id="displayName" class="integration-name"	value="">
+						</div>
+					</div><br>
+					</div>
+				</div>
+				<br>
+				<div class="row">
+					<div class="large-5 medium-5 columns" >&nbsp;</div>
+					<div class="large-4 medium-4 columns left" >
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button secondary text" id="submit-button">Add Integration</button>
+					</div>
+				</div><br>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

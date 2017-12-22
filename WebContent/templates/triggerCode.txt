@@ -1,0 +1,5 @@
+trigger SparktriggerNameTrigger on triggerName (parameters) {
+String url = webhookurlString baseURL = System.URL.getSalesforceBaseUrl().toExternalForm();
+String content = SparkWebhook.jsonContent(Trigger.new, Trigger.old,baseURL);
+SparkWebhook.callout(url, content);
+}

@@ -1,0 +1,14 @@
+{
+"Lead":[{ 
+    "Campaign Id":{{campaign.id}},
+    "Campaign Name":{{campaign.name}},	
+    "Lead Id":{{lead.ID}},
+	"Created Date":{{lead.Created At}},
+	"Updated At":{{lead.Updated At}},
+	"Lead name":{{lead.Full Name}},
+	"Country":{{lead.Country}},
+	"Company name":{{company.Company Name}},
+	"Lead role":{{lead.Role}},
+    "Program name":{{program.name}}   	
+}]
+}

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>BitBucket Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="http://183.82.99.100:7080/IframeTest/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="http://183.82.99.100:7080/IframeTest/css/collab-ui.min.css" rel="stylesheet" type="text/css">
+<link href="http://183.82.99.100:7080/IframeTest/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="http://183.82.99.100:7080/IframeTest/js/collab-formly.js"></script>
+<script src="http://183.82.99.100:7080/IframeTest/js/collab-ui.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/IframeTest/js/porthole.min.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/IframeTest/js/scripts.js"></script>
+
+<script type="text/javascript">
+	icon_url="http://183.82.99.100:7080/IframeTest/images/bitbucket.png";
+	var repo_modified=false;
+	var repo_name_old="";
+	var selected_repo_id="0";
+	
+	auth_url="applications";
+	token_url="tokendetails/bitbucket";
+	save_spark_token_url="savesparkaccesstoken";
+	form_data_url="uisettings/bitbucket";
+	disconnect_integration_url="disconnectintegration";	
+	post_form_data_url="saveintegration/bitbucket";
+	list_instances_url="listinstances/bitbucket";
+	update_form_data_url="updateintegration/bitbucket";
+	delete_instance_url="deleteInstance";
+	removeall_integration_instances_url="bitbucket/removeallinstances";
+	$( document ).ready(function() {
+		if(action=="connect") {
+			$("#integrations-block").hide();
+			$("#integration-form").hide();
+			setIntegrationAppAuthDetails(integration_id);
+		} else if(action=="disconnect") {
+			formAction="disconnect";
+			removeAllIntegrationInstances(formAction);
+		} else {//action list
+			console.log("list");
+			listIntegrations();
+		}
+		$("#bitbucket #repos").on('change',function(){
+			repo_modified=true;
+			console.log("repo_modified....");
+		});	
+		$("#bitbucket #rooms").on('change',function(){
+			room_modified=true;
+			console.log("room_modified....");
+		});			
+		
+		$("#bitbucket #submit-button").click(function (e){
+			e.preventDefault();
+			saveBitbucketInstance();
+		});
+		$("#cancel-button").click(function (e){
+			e.preventDefault();			
+			$('#integration-form').hide();
+			$('#integrations-block').show();
+			resize();
+		});
+		$('#bitbucket #add-config').click(function(e){
+			e.preventDefault();	
+			formAction="add";
+			$("#submit-button").text("Add Integration");
+			loadForm();	
+		});
+		$(document).on("click", "#bitbucket #instance-list-block .edit-config" , function() {
+			console.log("edit instance");
+			formAction="update";
+			repo_modified=false;
+			room_modified=false;
+			$("#submit-button").text("Save");
+			instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+				}
+			});
+			selected_room_id=instanceData.channelId;
+			var config=JSON.parse(instanceData.configJson);
+			selected_repo_id=config.repo_id;
+			loadForm();
+			$('#description').val(config.description);
+			repo_name_old = config.repo_name;
+			room_id_old = instanceData.channelId;
+			var notifications=config.notifications;
+			var pullrequest = notifications.pullrequest;
+			if($.isArray(pullrequest)) {
+				$.each(pullrequest,function(index,value){
+					$("input[type=checkbox][value="+value+"][name=pullrequest]").prop("checked",true);
+				});
+			} else if(pullrequest){
+				$("input[type=checkbox][value="+pullrequest+"][name=pullrequest]").prop("checked",true);
+			}			
+			var issue = notifications.issue;
+			if($.isArray(issue)) {
+				$.each(issue,function(index,value){
+					$("input[type=checkbox][value="+value+"][name=issue]").prop("checked",true);		  
+				});
+			}else if(issue){
+				$("input[type=checkbox][value="+issue+"][name=issue]").prop("checked",true);
+			}
+			var repo = notifications.repo;
+			if($.isArray(repo)) {
+				$.each(repo,function(index,value){
+					$("input[type=checkbox][value="+value+"][name=repo]").prop("checked",true);
+				});
+			} else if(repo) {
+				$("input[type=checkbox][value="+repo+"][name=repo]").prop("checked",true);
+			}
+		});
+	});
+	function setIntegrationAppAuthDetails(int_id) {
+		var OAUTHURL    =   '';//specific integration app oauth url
+		var CLIENTID    =   '';
+		var TYPE        =   'code';
+		console.log("int_id.."+int_id);
+		$('#loading-block').foundation('open');
+		$.ajax({url: auth_url+"?integration_id="+int_id,
+			async:true,
+			success: function(result){
+				console.log("result"+JSON.stringify(result));
+				$('#loading-block').foundation('close');
+				CLIENTID=result.clientid;
+				OAUTHURL= result.authoriseurl				
+				OAUTHURL=OAUTHURL+'?client_id='+CLIENTID+'&response_type='+TYPE;
+				loginWithAuthDetails(OAUTHURL);	
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				console.log('error while getting authorization detals..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});		
+	}
+	function loginWithAuthDetails(oauthURL) {
+		console.log("OAUTHURL login url..."+oauthURL);
+        var win = window.open(oauthURL, "windowname1", 'width=600, height=600'); 
+        var pollTimer = window.setInterval(function() { 
+            try {
+				console.log("login. window.."+win.document.URL);
+                if (win.document.URL.indexOf("code") != -1) {
+                    window.clearInterval(pollTimer);
+                    var url =   win.document.URL;
+                    console.log("url"+url);
+                    accessCode =   gup(url, 'code');
+                    tokenType = gup(url, 'token_type');
+                    expiresIn = gup(url, 'expires_in');
+                    win.close();
+					saveIntegrationAppToken(accessCode);
+					saveSparkToken();
+                }
+            } catch(e) {
+				console.log('error while getting authorization code..'+e);
+            }
+        }, 100);
+    }
+	function saveIntegrationAppToken(code) {
+		$('#loading-block').foundation('open');
+		$.ajax({url: token_url+"?code="+code+"&integration_id="+integration_id+"&token="+spark_token,
+			async:true,
+			success: function(result){
+				console.log(result);
+				$('#loading-block').foundation('close');
+				//integration_token=result.access_token;
+				connectIntegration();
+				loadForm();
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				console.log('error while saving token details..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});
+	}
+	function loadForm() {
+		loadBitbucketForm();
+	}
+	function loadBitbucketForm(){
+		console.log("spark_token.... "+spark_token);
+		$('#loading-block').foundation('open');
+		document.getElementById("form").reset();
+		$.ajax({url: form_data_url+"?sparkAccessToken="+spark_token+"&integration_id="+integration_id,
+			async:true,
+			success: function(result){			
+				var profiles = $.parseJSON(result[1]);
+				var rooms = result[0].items;
+				var repos = $.parseJSON(result[2]);
+				console.log("repos...."+JSON.stringify(repos));
+				console.log("rooms...."+JSON.stringify(rooms));
+				$("input#userid").val(profiles["profile"].id);
+				$("input#username").val(profiles["profile"].displayName);
+				$("input#ownername").val(repos["repos"].values[0].owner["username"]);
+				$('#repos')[0].options.length = 1;
+				$('#rooms')[0].options.length = 1;
+				$.each(repos["repos"].values, function(id,obj){
+					$("#repos").append($('<option>').text(obj.name).attr('value',obj.uuid));
+				}); 				
+				$.each(rooms, function(id,obj){
+					if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+				});
+				$("#rooms").val(selected_room_id);
+				$("#repos").val(selected_repo_id);
+				selected_room_id="0";
+				selected_repo_id="0";
+				$('#integrations-block').hide();	
+				$('#integration-form').show();
+				$('#loading-block').foundation('close');
+				resize();
+			},
+            error: function (error) {
+				$('#loading-block').foundation('close');
+				$('#integration-form').hide();
+				$('#integrations-block').show();
+                console.log('error while loading integration form data..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+            }
+		});				
+	}
+	function saveBitbucketInstance() {
+		var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		var jsonData = {};			
+		jsonData["room_id"] = $("#rooms option:selected").val();									
+		jsonData["integration_id"] = integration_id;
+		//jsonData["integration_token"] = integration_token;
+		jsonData["spark_token"] = spark_token;
+		jsonData["user_id"] = $("#userid").val();
+		jsonData["config"]={};
+		jsonData["config"]["room_name"]= selectedRoomName;
+		jsonData["config"]["repo_id"] = res.repositories;
+		jsonData["config"]["repo_name"]= ($("#repos option:selected").text()).toLowerCase().replace(" ","-");
+		jsonData["config"]["user_name"] = $("#username").val();
+		jsonData["config"]["owner_name"]=$("#ownername").val();
+		jsonData["config"]["description"]= res.description;
+		jsonData["config"]["notifications"]={};			
+		jsonData["config"]["notifications"]["repo"] = res.repo;
+		jsonData["config"]["notifications"]["issue"] = res.issue;
+		jsonData["config"]["notifications"]["pullrequest"] = res.pullrequest;
+		var action_url;
+		if(formAction=="update") {
+			jsonData["instance_id"] = instanceId;
+			jsonData["repo_modified"] = repo_modified;
+			jsonData["repo_name_old"] = repo_name_old;
+			jsonData["room_modified"] = repo_modified;
+			jsonData["room_id_old"] = room_id_old;
+			action_url=update_form_data_url;
+			$('.loading-first-block').html('Please wait while your Integration is being updated');
+			console.log("update integration");
+		} else {
+			action_url=post_form_data_url;
+			$('.loading-first-block').html('Please wait while your Integration is being set up');
+		}
+		var jsonString = JSON.stringify(jsonData);
+		var notificationslength = objLength(res.repo);
+		notificationslength+=objLength(res.issue);
+		notificationslength+=objLength(res.pullrequest);
+		if($('#repos').val()==0){
+			alert("Please select Repository");
+		} else if($('#rooms').val()==0){
+			alert("Please select Room");
+		} else if(notificationslength==0) {
+			alert("Please select atleast one Event");
+		} else {
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({url: action_url,
+				async:true,
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){	
+					$('#success-integration').foundation('open');
+					$('#loading-block').foundation('close');
+					$('.loading-first-block').html('Please wait just a moment while your app is loading');
+				},
+				error: function (error) {
+					listIntegrations();
+					$('#loading-block').foundation('close');
+					$('.loading-first-block').html('Please wait just a moment while your app is loading');
+					console.log('error while saving integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-second-block').html('');
+		}
+		console.log(jsonString);
+	}
+</script>
+</head>
+
+<body data-whatinput="mouse">
+	<div class="integration-app" id="bitbucket"><br>
+		<div id="loading-block" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-image">
+					<img src="http://183.82.99.100:7080/IframeTest/images/loadingImage.gif" alt="....."/>
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your
+				integration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns" style="width: 85%; height: 230px; ">
+				<div class="row">
+					<div class="large-2 medium-2 columns"><img alt="" src="http://183.82.99.100:7080/IframeTest/images/bitbucket.png"/>	</div>
+					<div class="large-6 medium-6 columns" style="float:left;"><label id="description-label">Bitbucket</label>
+						<label id="addedon-label"></label>
+					</div>
+				</div><br>
+				<label id="remove-msg"></label> 
+				<label id="remove-auth"></label>
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home" >
+				<div class="row">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns"><label>Bitbucket Configurations</label></div>
+						<div class="large-6 medium-6 columns">
+							<button class="button" id="add-config">Add</button>
+							<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+						</div>					
+					</div>
+				</div>
+				<hr>
+				<div id="instance-list-block" class="row">				
+				</div>
+			</div>
+		</div>
+		<div class="large-12 columns" id="integration-form" >
+			<form name="form" id="form" method="post">
+				<div class="row">
+					<div class="large-12 columns">
+					
+						<h3 class="heading-01">Bitbucket Configuration</h3><br>
+						<!-- <label><b>Bitbucket Repository</b></label>
+						<div class="large-4 medium-4 columns">Which repository should we listen to events on?</div>-->
+						<div class="large-12 medium-10 columns" style="float:left;">
+							<div class="large-4 medium-4 columns"><label>Bitbucket Repository</label></div>						
+							<div class="large-8 medium-8 columns text">
+								<select name="repositories"  id="repos"><option value="0">Select</option></select>
+							</div>	
+						</div>						
+					</div>
+				</div><div class="row">&nbsp;</div>
+				<div class="row">
+					<div class="large-12 columns">
+						<!--<label><b>Events</b></label>
+						<div class="large-6 medium-6 columns">Choose the bitbucket events that you want posted to Spark.</div>-->
+						<div class="large-12 medium-12 columns events">
+							<label>Notifications: Pull requests</label>
+							<div id="pull-requests" class="events-sub">
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><label><input type="checkbox" name="pullrequest" value="created"/>Created</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-4 medium-4 columns"><label><input type="checkbox" name="pullrequest" value="updated"/>Commented</label></div>
+									<div class="large-2 medium-2 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><label><input type="checkbox" name="pullrequest" value="fulfilled"/>Merged</label></div>	
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><label><input type="checkbox" name="pullrequest" value="rejected"/>Declined</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+							</div>
+						</div>
+						<div class="large-12 medium-12 columns">&nbsp;</div>
+						<div class="large-12 medium-12 columns events">
+							<label>Notifications: Issues</label>
+							<div class="events-sub" id="issues">								
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><label><input type="checkbox" name="issue" value="created"/>Created</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-3 medium-3 columns"><label><input type="checkbox" name="issue" value="updated"/>Updated</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">
+									<div class="large-4 medium-4 columns"><label><input type="checkbox" name="issue" value="comment_created"/>Commented</label></div>
+									<div class="large-8 medium-8 columns">&nbsp;</div>
+								</div>
+							</div>
+						</div>
+						<div class="large-12 medium-12 columns">&nbsp;</div>
+						<div class="large-12 medium-12 columns events">	
+							<label>Notifications: Commits</label>
+							<div id="commits" class="events-sub">
+								<div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns"><label><input type="checkbox" name="repo" value="push"/>Pushed</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									<div class="large-4 medium-4 columns"><label><input type="checkbox" name="repo" value="commit_comment_created"/>Commented</label></div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-12 medium-8 columns">
+						<h3 class="heading-01">Spark Configuration</h3>
+						<br> 
+						<div class="large-8 columns">
+							<div class="large-4 medium-4 columns" ><label>Room</label>
+							</div>
+							<div class="large-8 medium-8 columns text" >
+								<select name="room"	id="rooms"><option value="0">Select</option></select>
+							</div>
+						</div><br>
+						<div class="large-8 columns">
+							<div class="large-4 medium-4 columns" >
+								<label>Description</label>
+							</div>
+							<div class="large-8 medium-8 columns text" >
+								<input type="text" name="description" id="description" value="Bit bucket">
+							</div>
+							
+						</div><br>
+						<input type="hidden" name="userid" id="userid" value="">
+						<input type="hidden" name="username" id="username" value="">						
+						<input type="hidden" name="ownername" id="ownername" value="">						
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-6 medium-6 columns" >
+					</div><div class="large-4 medium-4 columns" >
+					</div>
+					<div class="large-4 medium-4 columns" >
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button" id="submit-button">Add Integration</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

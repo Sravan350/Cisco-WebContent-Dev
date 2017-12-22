@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="http://183.82.99.100:7080/IframeTest/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="http://183.82.99.100:7080/IframeTest/css/collab-ui.min.css" rel="stylesheet" type="text/css">
+<link href="http://183.82.99.100:7080/IframeTest/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="http://183.82.99.100:7080/IframeTest/js/collab-formly.js"></script>
+<script src="http://183.82.99.100:7080/IframeTest/js/collab-ui.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/IframeTest/js/porthole.min.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/IframeTest/js/scripts.js"></script>
+<script>
+	iconName="trello.png";
+	var integration_token="";
+	var selected_board_id="0";
+	var board_modified=false;
+	var board_name_old="";
+    auth_url="applications";
+	save_token_url = "savetokendetails";
+	form_data_url="uisettings/trello";
+	post_form_data_url="saveintegration/trello";
+	list_instances_url="listinstances/trello";
+	update_form_data_url="updateintegration/trello";
+	delete_instance_url="deleteInstance";
+	removeall_integration_instances_url="trello/removeallinstances";
+	disconnect_integration_url="disconnectintegration";
+	
+	$( document ).ready(function() { 
+		if(action=="connect") {			
+			$("#integrations-block").hide();
+			$("#integration-form").hide();
+			setTrelloAppAuthDetails(integration_id);
+		} else if(action=="disconnect") {
+			formAction="disconnect";
+			removeAllIntegrationInstances(formAction);
+		} else {//action list
+			console.log("list");
+			listIntegrations();
+		}
+		$("#trello #boards").on('change',function(){
+			board_modified=true;
+			console.log("board_modified....");
+		});	
+		$("#trello #rooms").on('change',function(){
+			room_modified=true;
+			console.log("room_modified....");
+		});	
+
+		$("#trello #submit-button").click(function (e){
+			e.preventDefault();
+			saveTrelloInstance();
+			
+		});
+		$("#trello #cancel-button").click(function (e){
+				e.preventDefault();			
+				$('#integration-form').hide();
+				$('#integrations-block').show();
+				resize();
+		});
+		$('#trello #add-config').click(function(e){
+				e.preventDefault();	
+				formAction="add";
+				$("#submit-button").text("Add Integration");
+				loadTrelloForm();	
+		});
+	
+		$(document).on("click", "#trello #instance-list-block .edit-config" , function() {
+			console.log("edit instance");
+			formAction="update";
+			board_modified=false;
+			room_modified=false;
+			$("#submit-button").text("Save");
+			instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+				}
+			});
+			console.log("instanceData......."+JSON.stringify(instanceData));
+			console.log("instanceData.channelId..." + instanceData.channelId);
+			//integration_token = instanceData.Integration_token[0].access_token;
+			selected_room_id=instanceData.channelId;
+			var config=JSON.parse(instanceData.configJson);
+			selected_board_id=config.board_id;
+			loadTrelloForm();
+			$('#description').val(config.description);
+			board_name_old = config.board_name;
+			room_id_old = instanceData.channel_id;
+			var notifications=config.notifications;
+			var boardandlistnotifications = notifications.boardandlistnotifications;
+			if($.isArray(boardandlistnotifications)) {
+				$.each(boardandlistnotifications,function(index,value){
+					$("input[type=checkbox][value="+value+"]").prop("checked",true);
+				});
+			} else {
+				$("input[type=checkbox][value="+boardandlistnotifications+"]").prop("checked",true);
+			}			
+			var cardnotifications = notifications.cardnotifications;
+			if($.isArray(cardnotifications)) {
+				$.each(cardnotifications,function(index,value){
+					$("input[type=checkbox][value="+value+"]").prop("checked",true);		  
+				});
+			}else {
+				$("input[type=checkbox][value="+cardnotifications+"]").prop("checked",true);
+			}
+			var checklistsnotifications = notifications.checklistsnotifications;
+			if($.isArray(checklistsnotifications)) {
+				$.each(checklistsnotifications,function(index,value){
+					$("input[type=checkbox][value="+value+"]").prop("checked",true);
+				});
+			} else {
+				$("input[type=checkbox][value="+checklistsnotifications+"]").prop("checked",true);
+			}
+		});		
+    });
+	
+	function setTrelloAppAuthDetails(int_id) {
+		console.log("int_id.."+int_id);
+		$('#loading-block').foundation('open');
+		$.ajax({url: auth_url+"?integration_id="+int_id,
+			async:true,
+			success: function(result){
+			    console.log("result"+JSON.stringify(result));
+				$('#loading-block').foundation('close');
+				var key=result[0].clientid;
+				console.log("key....." + key);
+				loginWithAuthDetails(key);	
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				console.log('error while getting authorization detals..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});		
+	}
+    function loginWithAuthDetails(key) {
+	console.log("log in ");
+		$.getScript("https://trello.com/1/client.js?key="+key ,function(){
+			Trello.authorize({
+				name: "Cisco Spark",
+				type: "popup",
+				interactive: true,
+				expiration: "never",
+				persist: false,
+				success: function () {
+				var token = Trello.token();
+					console.log("trello token :"+token);
+					saveIntegrationAppToken(token);
+				},
+				scope: { write: false, read: true },
+			});
+		});
+    }
+	
+	function saveIntegrationAppToken(token) {
+		integration_token = token;
+		$('#loading-block').foundation('open');
+		$.ajax({url: save_token_url+"?integration_id="+integration_id+"&integration_token="+integration_token+"&spark_token="+spark_token,
+			async:true,
+			success: function(result){
+			    console.log("result"+JSON.stringify(result));
+				console.log("save token url");
+				$('#loading-block').foundation('close');
+				connectIntegration();
+				loadTrelloForm();
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				console.log('error while saving token details..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});			
+	}
+	function loadTrelloForm(){
+		console.log("spark_token.... "+spark_token);
+		console.log("trello_token.... "+integration_token);
+		$('#loading-block').foundation('open');
+		document.getElementById("form").reset();
+		$.ajax({url:form_data_url+"?spark_token="+spark_token+"&integration_id="+integration_id,
+			async:true,
+			success: function(result){			
+				var profiles = $.parseJSON(result[1]);
+				var rooms = result[0].items;
+				var boards = $.parseJSON(result[2]);
+				console.log("boards...."+JSON.stringify(boards));
+				console.log("rooms...."+JSON.stringify(rooms));
+				$("input#userid").val(profiles["profile"].id);
+				$("input#username").val(profiles["profile"].displayName);				
+				$('#rooms')[0].options.length =1;				
+				$.each(rooms, function(id,obj){
+					if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+				}); 
+				$('#boards')[0].options.length =1;
+				$.each(boards.Boards, function(id,obj){
+					$("#boards").append($('<option>').text(obj.name).attr('value',obj.id));
+				}); 
+				$("#rooms").val(selected_room_id);
+				$("#boards").val(selected_board_id);
+				selected_room_id="0";
+				selected_board_id="0";
+				$('#integrations-block').hide();	
+				$('#integration-form').show();
+				$('#loading-block').foundation('close');
+				resize();
+			},
+            error: function (error) {
+				$('#loading-block').foundation('close');
+				$('#integration-form').hide();
+				$('#integrations-block').show();
+                console.log('error while loading integration form data..' + error);
+				alert('Some problem occured, Pleaase try after some time');			
+            }
+		});
+	}
+	function saveTrelloInstance() {
+		var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		var jsonData = {};			
+		jsonData["room_id"] = $("#rooms option:selected").val();;									
+		jsonData["integration_id"] = integration_id;
+		jsonData["integration_token"] = integration_token;
+		jsonData["spark_token"] = spark_token;
+		jsonData["user_id"] = $("#userid").val();
+		jsonData["config"]={};
+		jsonData["config"]["room_name"]= selectedRoomName;
+		jsonData["config"]["board_id"] = res.board;
+		jsonData["config"]["board_name"]= ($("#boards option:selected").text());
+		jsonData["config"]["user_name"] = $("#username").val();
+		jsonData["config"]["description"]= res.description;
+		jsonData["config"]["notifications"]={};			
+		jsonData["config"]["notifications"]["boardandlistnotifications"] = res.boardandlistnotifications;
+		jsonData["config"]["notifications"]["cardnotifications"] = res.cardnotifications;
+		jsonData["config"]["notifications"]["checklistsnotifications"] = res.checklistsnotifications;
+		var action_url;
+		if(formAction=="update") {
+			jsonData["instance_id"] = instanceId;
+			jsonData["board_modified"] = board_modified;
+			jsonData["board_name_old"] = board_name_old;
+			jsonData["room_modified"] = room_modified;
+			jsonData["room_id_old"] = room_id_old;
+			action_url=update_form_data_url;
+			console.log("update integration");
+		} else {
+			action_url=post_form_data_url;
+		}
+		var jsonString = JSON.stringify(jsonData);
+		var notificationslength = objLength(res.boardandlistnotifications);
+		notificationslength+=objLength(res.cardnotifications);
+		notificationslength+=objLength(res.checklistsnotifications);
+		if($('#rooms').val()==0){ 
+		    alert("Please select Room");
+		}else if($('#boards').val()==0){ 
+		    alert("Please select Board");
+		}else if(notificationslength==0) {
+			alert("Please select atleast one Event");
+		} else {
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({url: action_url,
+				async:true,
+				type: "POST",
+				data: jsonString,
+				contentType: "application/json",
+				dataType: "json",
+				success: function(result){	
+					$('#success-integration').foundation('open');
+					$('#loading-block').foundation('close');
+				},
+				error: function (error) {
+					listIntegrations();
+					$('#loading-block').foundation('close');
+					console.log('error while saving integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-second-block').html('');
+		}
+		console.log(jsonString);
+	}
+
+</script>
+</head>
+<body>
+    <div class="integration-app" id="trello"><br><br>
+		<div id="loading-block" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-image">
+					<img src="http://183.82.99.100:7080/IframeTest/images/loadingImage.gif" alt="....."/>
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your
+				integration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+				<div class="large-12 columns" style="width: 85%; height: 200px; ">
+				<div class="row">
+					<div class="large-6 medium-5 columns">
+						<img alt="icon">
+						<div class="large-4 small-3 columns"><label>Trello</label></div>
+					</div>
+				</div><br>
+				<p id="remove-msg"></p> 
+				<p id="remove-auth"></p>			
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home" >
+				<div class="row">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns">Trello Configurations</div>
+						<div class="large-6 medium-6 columns">
+							<button class="button" id="add-config">Add</button>
+							<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+						</div>					
+					</div>
+				</div>
+				<hr>
+				<div id="instance-list-block" class="row">				
+				</div>
+			</div>
+		</div>
+		<div class="large-12 columns" id="integration-form" >
+			<form name="form" id="form" method="post">
+				<div class="row">
+					<div class="large-12 columns">
+						<h4>Trello Configuration</h4>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-3 medium-4 columns">
+						<label>Trello Board</label>
+					</div>
+					<div class="large-4 medium-3 end columns">
+						<select name="board" id="boards">
+							<option value="0">Select Board</option>
+						</select>
+					</div>
+					<div class="large-1 end columns">
+						<span class="has-tip tip-right" title="Trello Boards"
+							aria-haspopup="true" data-tooltip=""><img class="tool-tip"></span>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-9 medium-8 columns events">
+						<label>Notifications: Board &amp; Lists</label>
+						<div class="events-sub" id="board-list-notifications">
+							<label><input type="checkbox" name="boardandlistnotifications" value="list-created">List created</label>
+							<label><input type="checkbox" name="boardandlistnotifications" value="list-renamed">list renamed</label>
+							<label><input type="checkbox" name="boardandlistnotifications" value="list-moved-to-board">List moved to other board</label> 
+							<label><input type="checkbox" value="list-archived-unarchived" name="boardandlistnotifications">List archived/unarchived</label> 
+							<label><input type="checkbox" name="boardandlistnotifications" value="board-renamed">Board renamed</label> 
+							<label><input type="checkbox" name="boardandlistnotifications" value="member-added-to-board">Member added to board</label>
+						</div>
+					</div>
+						<br>
+					<div class="large-9 medium-8 columns events">	
+					 <label>Notifications: Cards</label>
+						<div class="events-sub" id="cards-notifications">
+							<label><input type="checkbox" name="cardnotifications" value="card-created">Card created </label> <label><input type="checkbox" name="cardnotifications" value="card-renamed">Card	renamed</label>
+							<label><input type="checkbox" name="cardnotifications" value="comment-added">Comment added to card</label>
+							<label><input type="checkbox" name="cardnotifications" value="attachment-added">Attachment added to card</label>
+							<label><input type="checkbox" name="cardnotifications" value="description-changed">Description changed</label>
+							<label><input type="checkbox" name="cardnotifications" value="due-date-changed">Due date changed</label>
+							<label><input type="checkbox" name="cardnotifications" value="label-changed">Label changed</label>
+							<label><input type="checkbox" name="cardnotifications" value="member-added">Member added to card</label>
+							<label><input type="checkbox" name="cardnotifications" value="card-archived-unarchived">Card archived/unarchived</label>
+						</div>
+						</div>
+						<br>
+						<div class="large-9 medium-8 columns events">
+						<label>Notifications: Checklists</label>
+						<div class="events-sub" id="checklists-notifications">
+							<label><input type="checkbox" name="checklistsnotifications" value="checklist-card-created">Card created</label>
+							<label><input type="checkbox" name="checklistsnotifications" value="checklist-card-renamed">Card renamed</label>
+							<label><input type="checkbox" name="checklistsnotifications" value="checklist-cardmoved">Card Moved</label>
+						</div>
+						</div>
+						<hr>
+					</div>
+				<div class="row">
+					<div class="large-12 columns">
+						<h3>Spark Configuration</h3>
+						<br>
+						<div class="large-8 medium-8 columns">
+							<div class="large-6 medium-6 columns">
+								<label><b>Room</b></label>
+							</div>
+							<div class="large-6 medium-6 columns">
+								<select name="room" id="rooms">
+									<option value="0">Select Room</option>
+								</select>
+							</div>
+						</div>
+						<br>
+						<div class="large-8 medium-8 columns">
+							<div class="large-6 medium-6 columns">
+								<label><b>Description</b></label>
+							</div>
+							<div class="large-6 medium-6 columns">
+								<input type="text" name="description" id="description"	value="Trello">
+							</div>
+							<input type="hidden" name="userid" id="userid" value="">
+							<input type="hidden" name="username" id="username" value="">
+						</div>
+						<br>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-6 medium-6 columns"></div>
+					<div class="large-4 medium-4 columns"></div>
+					<div class="large-4 medium-4 columns">
+						<button class=" button" id="cancel-button">Cancel</button>
+						<button class=" button" id="submit-button">Save Integration</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

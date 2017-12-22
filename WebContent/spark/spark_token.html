@@ -1,0 +1,185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+
+
+
+</head>
+
+
+<script>
+var url = window.location.href;
+var sparkData;
+var code1;
+var _User_Id;
+var accessToken ="";
+var jsonObject={};
+
+
+
+
+
+
+
+
+
+
+if(url.indexOf("code")==-1){
+console.log("aaaaaaaaaa"+_User_Id);
+	if(_User_Id!=null||_User_Id!=undefind){
+	window.location.href = "https://api.ciscospark.com/v1/authorize?client_id=C0a8773c328c925aaada9db95e3faaa823b51145583610e85ce75cbd5c78f821d&response_type=code&redirect_uri=https%3A%2F%2F183.82.99.100%3A444%2FCiscoWebcontent%2Fspark_token.html&scope=spark%3Arooms_read%20spark%3Ateams_read%20spark%3Amessages_read%20spark-admin%3Aroles_read%20spark%3Arooms_write%20spark-admin%3Aorganizations_read%20spark%3Ateams_write%20spark%3Ateam_memberships_read%20spark%3Ateam_memberships_write%20spark%3Amessages_write%20spark%3Amemberships_read%20spark%3Apeople_read%20spark-admin%3Apeople_write%20spark%3Akms%20spark-admin%3Apeople_read%20spark%3Amemberships_write%20spark-admin%3Alicenses_read&state=set_state_here";
+		}
+		else{
+		console.log("no user id");
+		}
+	}
+	else{
+	code1=check(url, 'code');
+}
+function check(url, name) {
+        name = name.replace(/[[]/,"\[").replace(/[]]/,"\]");
+        var regexS = "[\?&]"+name+"=([^&#]*)";
+        var regex = new RegExp( regexS );
+        var results = regex.exec( url );		
+        if( results == null )
+            return "";
+        else
+            return results[1];
+    }
+var settings = {
+  "async": true,
+  "crossDomain": true,
+  "url": "https://api.ciscospark.com/v1/access_token",
+  "method": "POST",
+  "headers": {
+    "content-type": "application/x-www-form-urlencoded",
+   
+  },
+  "data": {
+    "grant_type": "authorization_code",
+    "client_id": "C0a8773c328c925aaada9db95e3faaa823b51145583610e85ce75cbd5c78f821d",
+    "client_secret": "4288dd26928e0b9f498872a4c026ffe8a9e60a3c20c12abcd770c3d721435866",
+    "code": code1,
+    "redirect_uri": "https://183.82.99.100:444/CiscoWebcontent/spark_token.html"
+  }
+}
+
+$.ajax(settings).done(function (response) {
+	sparkData=response;
+	console.log("sparkData "+JSON.stringify(sparkData));
+	if(sparkData.access_token != undefined) saveSparkToken(sparkData);
+	
+});
+
+		
+		
+function getDateTime1 (expireTime) {
+		var current = new Date();
+		var newDate = new Date(current.getTime() + (expireTime*1000));
+		year = "" + newDate.getFullYear();
+		month = "" + (newDate.getMonth() + 1); if (month.length == 1) { month = "0" + month; }
+		day = "" + newDate.getDate(); if (day.length == 1) { day = "0" + day; }
+		hour = "" + newDate.getHours(); if (hour.length == 1) { hour = "0" + hour; }
+		minute = "" + newDate.getMinutes(); if (minute.length == 1) { minute = "0" + minute; }
+		second = "" + newDate.getSeconds(); if (second.length == 1) { second = "0" + second; }
+		return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second;
+	}
+	
+
+function getUserId(sparkData){
+				var get_user_id = {
+  "async": true,
+  "crossDomain": true,
+  "url": "https://api.ciscospark.com/v1/people/me",
+  "method": "GET",
+  "headers": {
+    "authorization": "Bearer "+sparkData.access_token,
+    "content-type": "application/json",
+     }
+	 
+}
+
+$.ajax(get_user_id).done(function (response1) {
+console.log("response1 "+JSON.stringify(response1));  
+  _User_Id=response1.id;
+   console.log("AaccessToken "+sparkData.access_token);
+ //alert("user id is "+_User_Id);
+  
+  console.log("user id"+response1.id);
+		});
+
+}
+
+function saveSparkToken(sparkData){
+alert("saveSparkToken..........");
+
+//console.log("___________________________"+_User_Id);
+		//accessToken = sparkData.access_token;
+	jsonObject["accessToken"] = sparkData.access_token;
+	jsonObject["expires"]=getDateTime1(sparkData.expires_in);//getDateTime(7776000);
+	jsonObject["integrationId"] = "4208";
+	jsonObject["refreshToken"] = sparkData.refresh_token;
+	jsonObject["refreshExpires"]=getDateTime1(sparkData.refresh_token_expires_in);//getDateTime(7776000);
+	jsonObject["userId"]=_User_Id;
+	jsonString=JSON.stringify(jsonObject);
+	console.log(JSON.stringify(jsonObject));
+	
+	console.log("console.log(jsonObject.accessToken);"+jsonObject.accessToken);
+	//var oXHR = new XMLHttpRequest();
+	//oXHR.open("POST", "https://183.82.99.100:444/api/clients/tokens", true);
+	//oXHR.send(null);
+	
+	
+
+			
+		$.ajax({url:"https://183.82.99.100:444/api/clients/tokens",
+			async:true,
+			//Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS, DETELE,
+			type: "POST",
+			data: jsonString,
+			contentType: "application/json",
+			dataType: "json",
+			
+			success: function(result){	
+
+				alert("result " + JSON.stringify(result));
+				saveSparkTokenResponse="success";
+				console.log("result!!"+JSON.stringify(result));
+				getUserId(sparkData);
+			},
+			error: function (error) {
+				saveSparkTokenResponse="failure";
+			}
+			
+			
+		});	
+		console.log(jsonString);
+	/*				var get_user_id = {
+  "async": true,
+  "crossDomain": true,
+  "url": "https://api.ciscospark.com/v1/people/me",
+  "method": "GET",
+  "headers": {
+    "authorization": "Bearer "+jsonObject.accessToken,
+    "content-type": "application/json",
+     }
+	 
+}
+
+$.ajax(get_user_id).done(function (response) {
+console.log("response "+JSON.stringify(response));  
+  _User_Id=JSON.stringify(response.id);
+   console.log("AaccessToken "+jsonObject.accessToken);
+ //alert("user id is "+_User_Id);
+  
+  console.log("user id"+_User_Id);
+  
+});	*/
+		
+	}
+
+
+</script>
+</html>

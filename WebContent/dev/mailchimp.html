@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Market Place Dev</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+	<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<style>
+.spark-marketplace {width:30%;float:left;}
+.iframe {width:54%;float:left;}
+#token {margin-bottom: 15px;}
+@media screen and (max-width: 600px) {
+	.spark-marketplace {width:100%;}
+	.iframe {width:100%;float:left;}
+} 
+</style>
+	<script type="text/javascript">	
+	function gup(url, name) {
+        name = name.replace(/[[]/,"\[").replace(/[]]/,"\]");
+        var regexS = "[\?&]"+name+"=([^&#]*)";
+        var regex = new RegExp( regexS );
+        var results = regex.exec( url );	
+        if( results == null )
+            return "";
+        else
+            return results[1];
+    }			
+	var guestDomain = '183.82.99.100:444';
+	function onMessage(messageEvent) {  
+		if (messageEvent.origin == "https://" + guestDomain) {
+			if (messageEvent.data["connectIntegration"]) {
+				if(messageEvent.data["statusCode"]==200){
+					console.log("connectIntegration");
+				} else {}	
+			}						
+			if (messageEvent.data["disconnectIntegration"]) {
+				if(messageEvent.data["statusCode"]==200){
+					console.log("disconnectIntegration");
+				} else {}
+			}	
+			if (messageEvent.data["resize"]) {
+				iFrameID = document.getElementById('guestFrame1');
+				var iframeHeight=messageEvent.data["height"]+"px";
+				iFrameID.setAttribute('height', iframeHeight);
+				//el.setAttribute('width', messageEvent.data["width"]+"px");
+				//console.log("Height:::: "+$("#guestFrame1").height($("#guestFrame1").contents().height()));
+				
+				console.log("Market place height is "+iframeHeight);
+				//console.log("market place width is "+messageEvent.data["width"]);
+				//alert(10+iFrameID.contentWindow.document.body.scrollHeight + "px");
+			}
+		}
+	}
+
+	var windowProxy1;
+	window.onload=function(){ 
+			// Create a proxy window to send to and receive message from the guest iframe
+			windowProxy1 = new Porthole.WindowProxy('https://' + "183.82.99.100:444" + '/CiscoWebcontent/proxy.html', 'guestFrame1');
+			windowProxy1.addEventListener(onMessage);			
+	};
+
+	$(document).ready(function(){
+		var code = gup(window.location.href, "code");
+		if(code!=""){
+			$('#intId').val('Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NlYzFiMzYyM2ExNWQ3ZDgzNjc4Y2NmMWNjZjczMzYxODcxNDA4ZTVjNTEzNmY4YzAzNTJlYjY0MTc3YmQwMTE2');
+			$("#token").val(sessionStorage.getItem('userId'));
+			var id = sessionStorage.getItem('integrationId');
+			var token = sessionStorage.getItem('userId');
+			var action = $("#action").val();
+			
+			$("#guestFrame1").attr('src', "https://183.82.99.100:444/api/integrations/htmlContent?action="+action+"&integrationId="+id+"&userId="+token);
+			
+		}
+		$("#add-config").click(function (e){
+			console.log("here");
+			var id = $("#intId").val();
+			var token = $("#token").val();
+			var action = $("#action").val();
+			if(id==0){alert("Please select Integration");} else {
+				sessionStorage.setItem('userId', token);
+				sessionStorage.setItem('integrationId', id);
+				$("#guestFrame1").attr('src', "https://183.82.99.100:444/api/integrations/htmlContent?action="+action+"&integrationId="+id+"&userId="+token);
+			}
+		});
+	});
+
+	</script> 
+
+
+</head>
+
+<body >
+
+<div class="spark-marketplace">
+	<h1>DEV</h1>  <br>
+	<div class="large-12 medium-12 columns">
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>Integration App</b></label></div>						
+			<div class="large-10 medium-10 columns" >
+			<select name="int_id"  id="intId" class="dropdown">
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NlYzFiMzYyM2ExNWQ3ZDgzNjc4Y2NmMWNjZjczMzYxODcxNDA4ZTVjNTEzNmY4YzAzNTJlYjY0MTc3YmQwMTE2">MailChimp</option>
+			</select>
+			<!--<input type="text" name="int_id" id="intId" value="1" placeholder="Id">-->
+			</div>
+		</div>
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>User ID</b></label></div>
+			<div class="large-10 medium-10 columns">
+				<!--<input type="text" name="int_id" id="token" style="width:250px" value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI">-->
+			
+				<select name="user_id"  id="token" class="dropdown">
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI">Surender</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mMGU2OWMzYi1lMzU4LTQ3ZTUtODQyYy02MWMxMmRlNTVhY2Q">Chennakesavulu</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS83NzcyOTRkNy03NWZmLTQ5YmEtYjE5Yy02NzcyMTExMGYwMjM">Rajasekhar</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS85ZDE3OTViNC02MWE0LTQ2ZTQtYTZjOC04YTBkMDUwYmRkYTQ">Surendra</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8wYmQ5MGZjNS0wODZhLTRhZmUtOTI0YS03NzUyOWZiM2U1NTc">Revathi</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS80ZDNlZmY2MS03NWM0LTQ2YmYtOTIxZi02YWZiMzNmMGZjYTg">Satya</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS85MGQ5MzYzNy1jNzlmLTQ0MDAtYTBjNC1mZGQ5MjgwMjJhNmU">Vikas</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS9jYzU0ZmVlZC04OTZmLTRkZTQtOGYxZC0yMGVjOWUzMGVjYzk">Nisha</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8xMTVkMWVhOC0xNDg1LTRjMjItYTkwYS05M2E5MDI3NTkwOTM">Lokesh</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yZTdjMWRjMy05ZTVjLTRkODctOGM4Mi1hMjAzYTg2OWI1Y2U">Power User(Test User)</option>
+				</select>
+			</div>
+		</div>
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" >
+				<label><b>Action</b></label>
+			</div>
+			<div class="large-10 medium-10 columns" >
+				<!--<input type="text" name="action" id="action" value="CONNECT">-->
+				<select name="action"  id="action" class="dropdown">
+					<option value="LIST">LIST</option>
+					<option value="CONNECT">CONNECT</option>
+					<option value="DISCONNECT">DISCONNECT</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="large-8 medium-8 columns"><br>
+		<button class="button" id="add-config">Submit</button>
+	</div>
+</div>
+<br>
+<!--  <iframe id="guestFrame1" name="guestFrame1" width="500px" frameborder="0" src="http://183.82.99.100:7080/CiscoWebcontent/createbitbucket.html?integrationId=ABCDEF&token=1234567">
+-->
+<div class="iframe">
+	<iframe id="guestFrame1" name="guestFrame1" width="100%" frameborder="0" src="">	</iframe>
+	<br><br>
+<!--<h3>Footer</h3>-->
+</div>
+</body>
+</html>

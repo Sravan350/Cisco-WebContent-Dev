@@ -1,0 +1,7 @@
+function onAfter(current, previous) {
+   //This function will be automatically called when this rule is processed.
+	var spark = new SparkMessage();
+    spark.send("<WEBHOOK_URL> ",current.number + " with "+current.severity +" is assigned to "+ current.assigned_to);
+	
+   
+}

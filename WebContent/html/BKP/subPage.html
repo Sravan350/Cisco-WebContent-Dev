@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Main Page</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://183.82.99.100:7080/IframeTest/js/porthole.min.js"></script>
+		<script type="text/javascript">
+			function onMessage(messageEvent) {
+				if (messageEvent.data["color"]) {
+					document.body.bgColor = messageEvent.data["color"];
+				}
+			}
+			var windowProxy;
+			window.onload=function(){ 
+				windowProxy = new Porthole.WindowProxy("http://183.82.99.100:7080/IframeTest/proxy.html"); 
+				windowProxy.addEventListener(onMessage);
+			}
+		</script>
+
+<script type="text/javascript">
+
+    var OAUTHURL    =   'https://github.com/login/oauth/authorize?';
+    var VALIDURL    =   'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=';
+    var SCOPE       =   'https://www.googleapis.com/auth/userinfo.profile';
+    var CLIENTID    =   '674f89d4220a4466458b';
+    var REDIRECT    =   'http://localhost:8888/MAMP/html5/oauth/'
+    var TYPE        =   'token';
+    //var _url        =   OAUTHURL + 'scope=' + SCOPE + '&client_id=' + CLIENTID + '&redirect_uri=' + REDIRECT + '&response_type=' + TYPE;
+   // var _url = "https://github.com/login/oauth/authorize?client_id=674f89d4220a4466458b";
+   var _url= "https://bitbucket.org/site/oauth2/authorize?client_id=2jSJzgNghgvKMzQ8Hc&response_type=code";
+    function login() {
+
+    }
+
+    function login() {
+        var win         =   window.open(_url, "windowname1", 'width=800, height=600'); 
+            var pollTimer   =   window.setInterval(function() { 
+            try {
+               
+                if (win.document.URL.indexOf("code") != -1) {
+                    window.clearInterval(pollTimer);
+                    var url =   win.document.URL;
+                    console.log("url"+url);
+                    acToken =   gup(url, 'code');
+                    tokenType = gup(url, 'token_type');
+                    expiresIn = gup(url, 'expires_in');
+                    win.close();
+
+                    validateToken(acToken);
+                }
+            } catch(e) {
+            }
+        }, 100);
+    }
+    function validateToken(token) {
+    	console.log("code"+token);
+    }
+
+    //credits: http://www.netlobo.com/url_query_string_javascript.html
+    function gup(url, name) {
+        name = name.replace(/[[]/,"\[").replace(/[]]/,"\]");
+        var regexS = "[\?&]"+name+"=([^&#]*)";
+        var regex = new RegExp( regexS );
+        var results = regex.exec( url );
+        if( results == null )
+            return "";
+        else
+            return results[1];
+    }
+
+    function expand(){
+    	
+        $("#space").show();
+        console.log(document.body.scrollHeight);
+        console.log($("#content").height());
+      var height =  $("#content").height()+40;
+    	windowProxy.post({'expanded':true,'height':height});
+    }
+
+    function shrink(){
+    	 $("#space").hide();
+        console.log(document.body.scrollHeight);
+        console.log($("#content").height());
+        var height =  $("#content").height()+40;
+        windowProxy.post({'expanded':false,'height':height});
+    }
+
+
+    $( document ).ready(function() {
+        var url = window.location.href;
+        console.log(url);
+        var integrationId = gup(url,"integrationId");
+        var token = gup(url,"token");
+        console.log("integration Id = "+integrationId);
+        console.log("token = "+token);
+    });
+</script>
+
+
+</head>
+
+<body >
+<div id="content">
+<h2>content from Iframe</h2> 
+<br><br>
+<a href='#' onClick='login();'> Bit Bucket click here to login </a>
+<br><br>
+<input onclick="expand();" type="submit" value="Expand Me"/>
+			<br><br>
+			<input onclick="shrink()" type="submit" value="Shrink Me"/>
+			<br><br>
+
+<input onclick="windowProxy.post({'color':'blue'});" type="submit" value="Color Parent Blue"/>
+<br><br>
+			<input onclick="windowProxy.post({'color':'green'});" type="submit" value="Color Parent Green"/>
+			<br><br>
+			
+<div id="space">-----------------------------------------
+<br><br><br><br><br><br><br><br>---------------------------
+</div>
+</div>
+</body>
+</html>

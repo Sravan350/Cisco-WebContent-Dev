@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>SmartSheet Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://3c2ba678857e073c9506-9b92ffc51ccdc874f7e956dfcfbdbfba.ssl.cf5.rackcdn.com/spark/css/collab-ui-min.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<script>
+var jsonData="";
+integration_app_icon_url="https://183.82.99.100:8443/CiscoWebcontent/images/smartsheet/smartsheet.png";
+var spark_icon_url="https://183.82.99.100:8443/CiscoWebcontent/images/spark-icon.png";
+function loadForm(){
+document.getElementById("form").reset();
+	$('#rooms').empty();
+	jsonData= {"Rooms":[{"id":"Please Select","name":"Please Select"},{"id":"room1","name":"Room1"},{"id":"room2","name":"Room2"},{"id":"room3","name":"Room3"}],"sheets":[{"id":"sheet1","name":"sheet1"},{"id":"sheet2","name":"sheet2"}],"displayName":""};
+	var rooms = jsonData.Rooms;
+	var sheets = jsonData.sheets;
+	var displayName = jsonData.displayName;
+	
+	$.each(rooms, function(id,obj){
+		$("#rooms").append($('<option>').text(obj.name).attr('value',obj.id));
+	});
+	$.each(sheets, function(id,obj){
+		$("#sheets").append($('<option>').text(obj.name).attr('value',obj.id));
+	});
+	$("#rooms").customselect();
+}
+$(document).ready(function(){
+	$('#integrations-block').show();
+	$('#integration-form').hide();
+	$("#smartsheet-icon").attr("src", integration_app_icon_url);
+	$(".spark-icon").attr("src", spark_icon_url);
+	$(document).foundation();
+	if(localStorage.getItem("onedriveFormData")!=null){
+		$('#instance-list-block').show();
+		console.log("Items found");
+	}else {
+		console.log("not found");
+	}
+	$('#add-config').click(function(e){
+		loadForm();		
+		$('#integrations-block').hide();
+		$('#integration-form').show();
+	});
+   
+	$.fn.serializeObject = function(){
+    var o = {};
+	var a = this.serializeArray();
+	$.each(a, function() {
+    if (o[this.name] !== undefined) {
+        if (!o[this.name].push) {
+            o[this.name] = [o[this.name]];
+        }
+        o[this.name].push(this.value || '');
+    } else {
+        o[this.name] = this.value || '';
+    }
+	});
+	return o;
+	};
+	$("#submit-button").click(function (e){
+		e.preventDefault();
+		addOrUpdateInstance();
+	});
+	
+	$('#cancel-button').click(function(e){
+		e.preventDefault();
+		$('#integrations-block').show();
+		$('#integration-form').hide();
+		if(localStorage.getItem("onedriveFormData")!=null){
+			$('#instance-list-block').show();
+			console.log("Items found");
+		}else{
+			console.log("not found");
+		}
+	});
+
+	$(document).on("click", "#instance-list-block .edit-config" , function(e) {
+		e.preventDefault();
+		document.getElementById("form").reset();
+		$("#rooms").empty();
+		$("#sheets").empty();
+		$('#integrations-block').hide();
+		console.log("edit instance");
+		repo_modified=false;
+		$("#submit-button").text("Save");
+		var formData = localStorage.getItem("onedriveFormData");
+		loadForm();
+		$('#integration-form').show();
+		var json = JSON.parse(formData);
+		console.log("json.resource.." + json.resource);
+		console.log("after parsing "+JSON.stringify(json));
+		$("#sheets").val(json.sheets);
+		$("#rooms").val(json.room);
+		$('#displayName').val(json.displayName);
+		var events = json.events;
+	 	if($.isArray(events)) {
+			$.each(events,function(index,value){
+				$("input[type=checkbox][value="+value+"]").prop("checked",true);
+		    });
+		} else {
+			$("input[type=checkbox][value="+events+"]").prop("checked",true);
+		}
+	});
+	$('#remove-integration-btn').click(function(){
+		$('#remove-integration-popup').foundation('close');
+		localStorage.removeItem("onedriveFormData");
+		$("#instance-list-block").hide();
+	});
+	$(document).on("click", "#instance-list-block .remove-config" , function() {
+			console.log("on click remove");
+			$("#displayName-label").html(displayName);
+			$("#addedon-label").html("Added on: 27th Jul 2016");
+			$("#remove-msg").html("Are you sure you  want to remove integration from "+selectedRoomName+" room?");	
+			formAction="remove";
+			$('#remove-integration-btn').text("Remove");			
+	});
+	$(document).on("click", "#remove-all-config" , function() {
+		console.log("test remove all");
+		document.getElementById('remove-msg').innerHTML="Are you Sure you  want to remove all the integration instances?";
+		formAction="removeAll";			
+		resize();
+	});
+});
+	function addOrUpdateInstance() {
+		$("#submit-button").text("Add Integration");
+		var res = $('form').serializeObject();
+		selectedRoomName=$("#rooms option:selected").text();
+		displayName=$('#displayName').val();
+		res = JSON.stringify($('form').serializeObject());//static
+		console.log(res);//static
+		localStorage.setItem("onedriveFormData",res);//static
+		$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+		$('#loading-block').foundation('open');
+		$.ajax({url: 'test.html',
+			success: function(result){				
+				$('#loading-block').foundation('close');
+				$('#success-integration').foundation('open');
+				$('#done-button').click(function() {
+					$('#success-integration').foundation('close');
+					$("#integration-form").hide();
+					listIntegrations();
+				});
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				alert('error while saving data' + error);
+			}
+		});
+	}
+function listIntegrations() {
+	 console.log("in func()");
+	 $('#integration-form').hide();
+	 $('#integrations-block').show();
+	 var listDataHTML="";		
+	$.ajax({
+		url:'test.html',
+		async: false,
+		success: function(result){	
+			$("#instance-list-block").show();
+			console.log("in success before if");
+			if(localStorage.getItem("onedriveFormData")==null){
+				console.log("in success if");
+				$("#instance-list-block").html(listDataHTML);
+			}else{
+				 console.log("in success else");
+				   listDataHTML+='<div class="large-12 medium-12 columns instance-background"><br>';
+					listDataHTML+='<div class="large-8 medium-8 columns integration-details">';
+					listDataHTML+='<img src="'+integration_app_icon_url+'" alt="">';
+					listDataHTML+='<label>'+displayName+'</label>';
+					listDataHTML+='<label>'+selectedRoomName+'</label>';
+					listDataHTML+='<label class="date">Added: 27th Jul 2016</label>';
+					listDataHTML+='</div>';
+					listDataHTML+='<div class="large-2 medium-2 columns edit-remove-icons">';
+					listDataHTML+='<span class="cross-mark remove-config" data-open="remove-integration-popup" id="123456"></span>';
+					listDataHTML+='<a class="edit-config" id="56789">Edit</a>';
+					listDataHTML+='</div>';
+					listDataHTML+='</div><hr class="instance-hr">';	
+					 $("#instance-list-block").html(listDataHTML);
+			}
+		}
+	});		
+
+}
+</script>
+</head>
+<body>
+	<div class="integration-app" id="onedrive"><br>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading"><img class="spark-icon" src="" alt="....."></div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment while your app is loading</div>
+				<div class="loading-second-block">name and room name</div>
+				<div class="loading-bar"><div class="loading-background"></div>	</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-loading">
+				<img class="spark-icon" src="" alt=".....">
+			</div>
+			<div class="well-done-text">Well done!</div>
+			<div class="success-integration-first-block">Your configuration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns buttons-block">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="secondary button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns desktop-block">			    
+				<div class="row">
+					<div class="large-2 medium-2 columns"><img alt="" id="smartsheet-icon" src=""/></div>
+					<div class="large-6 medium-6 columns" style="float:left;">
+						<label id="displayName-label"></label>
+						<label id="addedon-label"></label>
+					</div>
+				</div><br>
+				<div class="msg-labels"><label id="remove-msg"></label> <label id="remove-auth"></label></div>				
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button id="remove-integration-btn" class="button remove-integration-btn" style="float:right">Remove</button>
+			</div>
+			<div class="large-12 columns mobile-block">	
+				<div class="msg-labels"><label id="remove-msg-mobile"></label> <label id="remove-auth-mobile"></label></div>				
+				<div class="option-buttons remove-integration-buttons">
+					<label class="remove-popup-cancel"> 
+						<a href="#" id="cancel-remove-integration">cancel</a>
+					</label>
+					<label class="remove-popup-remove">
+						<a href="#" id="remove-integration-btn-mobile" class="remove-integration-btn">remove</a>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home">
+				<div class="row add-config-block">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns config-name"><label>SmartSheet Configuration</label></div>
+						<div class="large-6 medium-6 columns">
+							<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+							<button class="secondary button" id="add-config">Add</button>
+						</div>					
+					</div>
+				</div>
+				<div id="instance-list-block" class="row instance-list-block">						
+				</div>
+			</div>
+		</div>
+		<div class="large-12 columns" id="integration-form">
+			<div class="authenticted-block">Authenticated to Smartsheet as: <span id="authenticted-to">example123</span></div>
+			<div class="no-configuration-block" style="display:none">There are no sheets available in your Smartsheet Account. Please create sheets in your account and configure.<br></div>
+			<form name="form" id="form" method="post">
+				<div class="row app-config-block">
+					<div class="large-10 medium-10 columns">
+						<label class="heading-01">SmartSheet Configuration</label>
+						<div class="large-8">
+							<div class="large-3 medium-2 columns ">
+								<label class="label-config">SmartSheet Lists</label>
+							</div>
+							<div class="large-5 medium-5 columns text left ">
+								<select id="sheets" name="sheets" class="dropdown">													 
+								</select>
+								<span class="has-tip tip-right" id="tooltip" title="Sheets, for which you'd receive notifications" data-tooltip><img class="tool-tip"></span>
+							</div>								
+						</div>
+					</div>				
+				</div><hr>
+				<div class="row">
+					<div class="large-10 medium-10 columns">
+						<h3 class="heading-01">Spark Configuration</h3>
+						<br> 
+					<div class="large-8 columns">
+						<div class="large-2 medium-2 columns small-mobile">
+							<label>Room</label>
+						</div>
+						<div class="large-5 medium-5 columns text left input-small-mobile">
+							<select name="room" id="rooms" class="custom-select">
+							<option value='0'>Please Select</option></select><span class="has-tip tip-right" id="tooltip" title="Room, to which would you like to receive notifications for?"
+								data-tooltip><img class="tool-tip"></span>
+						</div>
+					</div><br><br>
+					<div class="large-8 columns">
+						<div class="large-2 medium-2 columns small-mobile">
+							<label>Name</label>
+						</div>
+						<div class="large-5 medium-5 columns text left input-small-mobile">
+							<input type="text" name="displayName" id="displayName" class="integration-name"	value="">
+						</div>
+					</div><br>
+					</div>
+				</div>
+				<br>
+				<div class="row">
+					<div class="large-5 medium-5 columns" >&nbsp;</div>
+					<div class="large-4 medium-4 columns left" >
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button secondary text" id="submit-button">Add Integration</button>
+					</div>
+				</div><br>
+			</form>
+		</div>
+	</div>
+</body>
+<footer>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/jquery-customselect.js"></script>
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/jquery-customselect.css" rel="stylesheet" type="text/css">
+</footer>
+</html>

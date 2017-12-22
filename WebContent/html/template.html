@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>App Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/jquery-customselect.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/jquery-customselect.css" rel="stylesheet" type="text/css">
+<script src="https://183.82.99.100:8443/CiscoWebcontent/js/jquery.multiselect.js"></script>
+<link href="https://183.82.99.100:8443/CiscoWebcontent/css/jquery.multiselect.css" rel="stylesheet" type="text/css">
+
+<style type="text/css">
+ul,li { margin:0; padding:0; list-style:none;}
+.ms-options-wrap > .ms-options > ul input[type="checkbox"] {
+    left: 0;
+    margin-right: 10px;
+    opacity: 1;
+    position: relative;
+    top: 3px;
+}
+.ms-options-wrap > .ms-options > ul > li.optgroup .label {
+    display: none;
+}
+.ms-options {
+    min-height: 100px !important;
+}
+.ms-options-wrap > button::after {
+border-style:none;
+}
+.ms-options-wrap > button {
+    background: #ffffff url("../images/down-arrow.png") no-repeat scroll 93% center / 12px auto !important;
+}
+.ms-options-wrap > button {
+
+	border: 1px solid #d7d7d8;
+	border-radius: 2px;
+	height: 36px;
+}
+.ms-options-wrap > .ms-options > ul li.selected label, .ms-options-wrap > .ms-options > ul label:hover {
+    background-color: #ffffff;
+}
+</style>
+
+
+<script> 
+integration_app_icon_url="https://183.82.99.100:8443/CiscoWebcontent/images/trello/trello.png";
+var spark_icon_url="https://183.82.99.100:8443/CiscoWebcontent/images/spark-icon.png";
+var formData ={"Rooms":[{"id":"room0","title":"Room0"},{"id":"room1","name":"Room1"},{"id":"room2","name":"Room2"},{"id":"room3","name":"Room3"}],
+			"Boards":[{"id":"board1","name":"Board1"},{"id":"board2","name":"Board2"},{"id":"board3","name":"Board3"}],
+			"itemslist" : [{"id":"first","type":"file","name":"First.html"},{"id":"second","type":"folder","name":"Folder1"},{"id":"third","type":"file","name":"box.docx"},{"id":"third","type":"file","name":"box.docx"},{"id":"third","type":"folder","name":"My Folder"},{"id":"third","type":"folder","name":"Documents"}]};
+    var selectedRoomName="";
+	var formAction="";
+	var description="";
+	iconName="App.png";
+	var integration_token="";
+	var selected_room_id="0";
+	var selected_board_id="0";
+	var board_modified=false;
+	var board_name_old="";
+    auth_url="applications";
+	save_token_url = "savetokendetails";	
+	form_data_url="test.html";
+	post_form_data_url="test.html";
+	list_instances_url="test.html";
+	update_form_data_url="test.html";
+	delete_instance_url="test.html";
+	removeall_integration_instances_url="app/removeallinstances";
+	disconnect_integration_url="disconnectintegration";
+	
+	$( document ).ready(function() {
+		 
+		
+		$('#integration-form').hide();
+		$(document).foundation();	
+
+		$("#app-icon").attr("src", integration_app_icon_url);
+		$("#app #boards").on('change',function(){
+			board_modified=true;
+			console.log("board_modified....");
+		});	
+		$("#app #rooms").on('change',function(){
+			room_modified=true;
+			console.log("room_modified....");
+		});	
+
+		$("#app #submit-button").click(function (e){
+			e.preventDefault();
+			saveAppInstance();
+			
+		});
+		$("#app #cancel-button").click(function (e){
+				e.preventDefault();			
+				$('#integration-form').hide();
+				$('#integrations-block').show();
+				//resize();
+		});
+		$('#app #add-config').click(function(e){
+				e.preventDefault();	
+				//formAction="add";
+				$("#submit-button").text("Add Integration");
+				loadAppForm();	
+		});
+		
+		$("#expand-close").addClass("closearrow");
+		$('#expand-close').click(function(e){
+			e.preventDefault();
+			if($(this).attr('class')=='closearrow'){
+				$('#showSetup').hide();
+				 $(this).removeClass("closearrow");
+				 $(this).addClass("expandarrow");
+				 $('.expandarrow').attr('title','expand');
+			}else{
+				$(this).addClass("closearrow");
+				$(this).removeClass("expandarrow");
+				$('.closearrow').attr('title','close');
+				$('#showSetup').show();
+			}
+			//resize();
+		});
+		$("#expand-close-config").addClass("closearrow");
+		$('#expand-close-config').click(function(e){
+			e.preventDefault();
+			if($(this).attr('class')=='closearrow'){
+				$('#showConfig').hide();
+				 $(this).removeClass("closearrow");
+				 $(this).addClass("expandarrow");
+				 $('.expandarrow').attr('title','expand');
+			}else{
+				$(this).addClass("closearrow");
+				$(this).removeClass("expandarrow");
+				$('.closearrow').attr('title','close');
+				$('#showConfig').show();
+			}
+			//resize();
+		});
+		$(document).on("click", "#app #instance-list-block .edit-config" , function() {
+			console.log("edit instance");
+			formAction="update";
+			board_modified=false;
+			room_modified=false;
+			
+			
+
+			$("#expand-close").removeClass("closearrow");
+			$("#expand-close").addClass("expandarrow");
+			$('#expand-close').find("span").attr("title",'expand');
+			//$(".config-info").show();
+			$("#showSetup").hide();
+			
+			$("#expand-close-config").removeClass("expandarrow");
+			$("#expand-close-config").addClass("closearrow");
+			$('#expand-close-config').find("span").attr("title",'close');
+			//$(".config-info").show();
+			$("#showConfig").show();
+			
+			
+			var issueStatusArray = [];
+			var issueTypesArray = [];
+			var issueSelectedText = "";
+			var issueTypeText = "";	
+			$("#submit-button").text("Save");
+			
+			loadAppForm();
+
+			$('#integation-form').show();
+			$('#integrations-block').hide();
+			var formData = localStorage.getItem("formdata");
+			var json = JSON.parse(formData);
+			selected_room_id=json.room;
+			selected_board_id=json.boards;
+			console.log("json.room " + json.room);
+			console.log("From localStorage variable:"+ JSON.stringify(json));
+			$('#boards').val(selected_board_id);
+			$('#rooms').val(selected_room_id);
+			$('.custom-select span').html($("#rooms option:selected").text());
+			displayName = json.displayName;
+			issuetype = json.issuetype;
+	
+			$('#resources').val(json.resource);
+			$('#displayName').val(json.displayName);
+			
+			var subnotifications = json.subnotifications;
+			if($.isArray(subnotifications)) {
+				$.each(subnotifications,function(index,value){
+					$("input[type=checkbox][value="+value+"][name=subnotifications]").prop("checked",true);
+				});
+			} else {
+				$("input[type=checkbox][value="+subnotifications+"][name=subnotifications]").prop("checked",true);
+			}			
+			issueSelectedText = issueStatusArray.join(',');
+			console.log("issueSelectedText.." + issueSelectedText);
+			
+			if ($.isArray(issuetype)) {
+				$.each(issuetype, function(index, value) {
+				console.log("value....." + value);
+					issueTypesArray.push(value);
+					$("input[type=checkbox][value="+ value + "]").prop("checked", true);
+				});
+			} else {
+				issueTypesArray.push(issuetype);
+				$("input[type=checkbox][value="+ issuetype+ "]").prop("checked", true);
+			}
+			issueTypeText = issueTypesArray.join(',');
+			//$('.ms-options-wrap > button').html(issueTypeText);
+			$('.issuestatus div.ms-options-wrap > button').html(issueSelectedText);
+			$('.issuetypes div.ms-options-wrap > button').html(issueTypeText);
+		});	
+		
+		
+		//multiselect start
+		$("#issuetypes").on( "change",function() {
+		console.log("on change..");
+				var issueTpesArray = [];
+				var issueTypesText;
+				$(".issuetype:checked").each(function() {
+					issueTpesArray.push($(this).val());
+				});
+				issueTypesText = issueTpesArray.join(',');
+	
+				if(issueTypesText.length >=1){
+				$('.issuetypes div.ms-options-wrap > button').html(issueTypesText);
+				}else{
+					console.log("issueTypesText.length: " + issueTypesText.length);	
+				}
+		});
+		//multiselect end
+		
+		
+		
+        $.fn.serializeObject = function() {
+			var o = {};
+			var a = this.serializeArray();
+			$.each(a, function() {
+			if (o[this.name] !== undefined) {
+				if (!o[this.name].push) {
+					o[this.name] = [o[this.name]];
+				}
+				o[this.name].push(this.value || '');
+			} else {
+				o[this.name] = this.value || '';
+			}
+			});
+			return o;
+		};		
+		$(document).on("click", "#done-button" , function() {
+			$('#success-integration').foundation('close');
+			$("#integration-form").hide();
+			listIntegrations();
+	    });
+		
+		$(document).on("click", "#instance-list-block .remove-config" , function() {
+			console.log("on click remove");
+			/*instanceId=this.id;
+			$.each(listResultData,function(index,value){
+				if(value["instanceId"]==instanceId) {
+					instanceData=value;
+					console.log("instanceData...."+instanceData);
+				}
+			});
+			var config=JSON.parse(instanceData.configJson);
+			selectedRoomName=config.room_name;*/
+			$("#displayName-label").html(displayName);//config.description
+			$("#addedon-label").html("Added on: Jun 29th, 2016");//+instanceData.createdDate
+			$("#remove-msg").html("Are you sure you  want to remove integration from "+selectedRoomName+" room?");	
+			formAction="remove";
+			$('#remove-integration-btn').text("Remove");			
+		});		
+		$('#cancel-remove-integration').click(function(e){
+			e.preventDefault();
+			$('#remove-integration-popup').foundation('close');
+		});
+		$('#remove-integration-btn').click(function(e){
+			e.preventDefault();
+			$('#remove-integration-popup').foundation('close');
+			if(formAction=="removeAll") {
+				removeAllIntegrationInstances("remove");
+			} else { 
+				//removeIntegrationInstance(instanceId);
+				removeIntegrationInstance();
+			}
+		});
+		function removeIntegrationInstance(instanceId) {
+			//console.log("removeIntegrationInstance instanceId..."+instanceId);
+			$('.loading-second-block').html('Removing integration for the room '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+			$.ajax({//url: delete_instance_url+"?instanceId="+instanceId,
+				url:delete_instance_url,
+				//type:"DELETE",
+				//async:true,
+				success: function(result){		
+					console.log("removeIntegrationInstance");
+					localStorage.removeItem("formdata");
+					$('#instance-list-block').hide();
+					listIntegrations();
+					$('#loading-block').foundation('close');
+				},
+				error: function (error) {
+					$('#loading-block').foundation('close');
+					console.log('error while removing integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-second-block').html('');
+	    }
+		$("#issuetypes").on( "change",function() {
+
+			var typeslength = $('input[name="issuetype"]:checked').length;
+			var issueTpesArray = [];
+			
+			$(".issuetype:checked").each(function() {
+				issueTpesArray.push($(this).val());
+			});
+			issueTypesText = issueTpesArray.join(',');
+			if(typeslength!=0){
+			$('.issuetypes div.ms-options-wrap > button').html(issueTypesText);
+			console.log("typeslength...... " + typeslength);	
+			}else{
+				$('.issuetypes div.ms-options-wrap > button').html("Find Types");
+				console.log("typeslength...... " + typeslength);		
+			}
+			
+			
+		});
+    });
+	
+	function loadAppForm(){
+
+		//console.log("spark_token.... "+spark_token);
+		//console.log("App_token.... "+integration_token);
+		$('#loading-block').foundation('open');
+		document.getElementById("form").reset();
+		var rooms = formData.Rooms;
+		var boards = formData.Boards;
+		//var itemslist= formData.itemslist;
+		$.ajax({//url:form_data_url+"?spark_token="+spark_token+"&integration_id="+integration_id,
+		    url: form_data_url,
+			//async:true,
+			success: function(){
+                $("#integration-form").show();
+				$('#integrations-block').hide();			
+				/*var profiles = $.parseJSON(result[1]);
+				var rooms = result[0].items;
+				var boards = $.parseJSON(result[2]);
+				console.log("boards...."+JSON.stringify(boards));
+				console.log("rooms...."+JSON.stringify(rooms));
+				$("input#userid").val(profiles["profile"].id);
+				$("input#username").val(profiles["profile"].displayName);*/	
+				$("input#userid").val("1234");
+				$("input#username").val("testuser");				
+				$('#rooms')[0].options.length =1;
+				$('#webhookURL').val("https://integrations.ciscospark.com/v1/integrations/1146/00be617f-9256-4c7c-85b2-a80c20b8e221");//static				
+				$.each(rooms, function(id,obj){
+					//if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+					$("#rooms").append($('<option>').text(obj.name).attr('value',obj.id));
+				});	
+				$('#boards')[0].options.length =1;
+				
+				$.each(boards, function(id,obj){
+					
+					$("#boards").append($('<option>').text(obj.name).attr('value',obj.id));
+				}); 
+		
+				$("#rooms").val(selected_room_id);
+				$("#boards").val(selected_board_id);
+				$('.custom-select span').html($("#rooms option:selected").text());
+				selected_room_id="0";
+				selected_board_id="0";
+				$('#integrations-block').hide();	
+				$('#integration-form').show();
+				$('#loading-block').foundation('close');
+				$('#issuetypes').multiselect({
+					columns: 1,
+					placeholder: 'Find Types',
+					search: false,
+					selectAll: false
+				});
+				$('.issuetypes div.ms-options > ul > li > ul > li.ms-reflow').find(':checkbox').attr('name', 'issuetype');
+				$('.issuetypes div.ms-options > ul > li > ul > li.ms-reflow').find(':checkbox').attr('class', 'issuetype');
+				
+				$("#rooms").customselect();
+
+				//resize();
+			},
+            error: function (error) {
+				$('#loading-block').foundation('close');
+				$('#integration-form').hide();
+				$('#integrations-block').show();
+                console.log('error while loading integration form data..' + error);
+				alert('Some problem occured, Pleaase try after some time');			
+            }
+		});
+		
+	}
+	function objLength(obj){
+		var i=0;
+		for (var x in obj){
+			if(obj.hasOwnProperty(x)){
+				i++;
+			}
+		} 
+		return i;
+	}
+	function saveAppInstance() {
+	    var response = $('form').serializeObject();
+		selectedRoomName=$("#rooms option:selected").text();
+		displayName = $('#displayName').val();
+		var res = JSON.stringify($('form').serializeObject());
+		localStorage.setItem("formdata",res);
+		console.log(res);
+        /*
+		var jsonData = {};			
+		jsonData["roomId"] = $("#rooms option:selected").val();;									
+		jsonData["integrationId"] = integration_id;
+		//jsonData["integration_token"] = integration_token;
+		jsonData["accessToken"]=token;
+		jsonData["sparkToken"] = spark_token;
+		jsonData["userId"] = $("#userid").val();
+		jsonData["config"]={};
+		jsonData["config"]["room"]= selectedRoomName;
+		jsonData["config"]["boardId"] = selectedBoardId;
+		jsonData["config"]["board"]= ($("#boards option:selected").text());
+		jsonData["config"]["username"] = $("#username").val();
+		jsonData["config"]["description"]= res.description;
+		jsonData["config"]["notifications"]={};			
+		jsonData["config"]["notifications"]["boardandlistnotifications"] = res.boardandlistnotifications;
+		jsonData["config"]["notifications"]["cardnotifications"] = res.cardnotifications;
+		jsonData["config"]["notifications"]["checklistsnotifications"] = res.checklistsnotifications;*/
+		var action_url;
+		if(formAction=="update") {
+			/*jsonData["instance_id"] = instanceId;
+			jsonData["board_modified"] = board_modified;
+			jsonData["board_name_old"] = board_name_old;
+			jsonData["room_modified"] = room_modified;
+			jsonData["room_id_old"] = room_id_old;*/
+			action_url=update_form_data_url;
+			console.log("update integration");
+		} else {
+			action_url=post_form_data_url;
+		}
+		//var jsonString = JSON.stringify(jsonData);
+		var notificationslength = objLength(response.subnotifications);
+	var typeslength = $('input[name="issuetype"]:checked').length;
+	console.log("typeslength: " + typeslength);
+		if($('#rooms').val()==0){ 
+		    alert("Please select Room");
+		}else if($('#boards').val()==0){ 
+		    alert("Please select Board");
+		}else if(notificationslength==0) {
+			alert("Please select atleast one Event");
+		}else if(typeslength==0) {
+			alert("Please select atleast one Issue Type");
+		}else if($('#resources').val()==0) {
+			alert("Please select File or Folder");
+		}/*else if($('#issuetypes input[type=""]'==0) {
+			alert("Please select atleast one Event");
+		} */else {
+			$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+			$('#loading-block').foundation('open');
+
+			$.ajax({url: action_url,
+				//async:true,
+				//type: "POST",
+				//data: jsonString,
+				//contentType: "application/json",
+				//dataType: "json",
+				success: function(result){	
+					$('#success-integration').foundation('open');
+					$('#loading-block').foundation('close');
+				},
+				error: function (error) {
+					listIntegrations();
+					$('#loading-block').foundation('close');
+					console.log('error while saving integration instance details..' + error);
+					alert('Some problem occured, Pleaase try after some time');
+				}
+			});
+			$('.loading-second-block').html('');
+		}
+		//console.log(jsonString);
+	}
+	function listIntegrations() {
+		console.log("listIntegrations...");
+		$("#integration-form").hide();
+		$('#loading-block').foundation('open');		
+		$.ajax({//url: list_instances_url+"?token="+spark_token+"&integration_id="+integration_id,
+			url:list_instances_url,
+			//async:true,
+			success: function(result){		
+				//console.log("listIntegrations result...."+result);
+				listInstancesData(result);
+				$('#loading-block').foundation('close');
+				$("#integrations-block").show();
+				//resize();
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				console.log('error while retrieving the list of integration instances..' + error);
+				alert('Some problem occured, Pleaase try after some time');
+			}
+		});	
+	}
+	function listInstancesData(result) {
+		$("#integrations-block").show();
+			if(localStorage.getItem("formdata")!=null)
+			$("#instance-list-block").show();
+			var listDataHTML="";
+			//listResultData=result;
+			//$.each(listResultData, function(i, instance) {
+				//var configData=JSON.parse(instance.configJson);
+				listDataHTML+='<div class="large-12 columns instance-background"><br>';
+				listDataHTML+='<div class="large-8 medium-8 columns integration-details">';
+				listDataHTML+='<img src="'+integration_app_icon_url+'" alt="">';
+				listDataHTML+='<label>'+displayName+'</label>';
+				listDataHTML+='<label>'+selectedRoomName+'</label>';
+				listDataHTML+='<label>Added: Jun 29th, 2016</label>';
+				listDataHTML+='</div>';
+				listDataHTML+='<div class="large-3 medium-3 columns edit-remove-icons">';
+				listDataHTML+='<span id="1234" data-open="remove-integration-popup" class="cross-mark remove-config"></span>';
+				listDataHTML+='<a id="edit-config" class="edit-config">Edit</a>';
+				listDataHTML+='</div>';
+				listDataHTML+='</div><hr class="instance-hr">';			
+			//});
+		$("#instance-list-block").html(listDataHTML);
+		/*if(listResultData.length<=1){ $("#remove-all-config").hide();}
+		else { $("#remove-all-config").show();}*/
+	}
+</script>
+</head>
+
+<body>
+	  <div class="integration-app" id="app"><br><br>
+		<div id="loading-block" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading">
+				<img id="spark-icon" src="" alt=".....">
+			</div>
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block">name and room name</div>
+				<br>
+				<div class="loading-bar"><div class="loading-background"></div>
+					
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading">
+				<img class="spark-icon" src="" alt=".....">
+			</div>
+			<div class="success-integration-first-block">Well done! Your configuration has been set up and is ready to use.</div>
+			<div class="large-5 medium-5 columns buttons-block">
+				<div class="success-integration-second-block">
+					<!--<button class="button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="secondary button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns desktop-block">			    
+				<div class="row">
+					<div class="large-2 medium-2 columns"><img alt="" id="app-icon" src=""/></div>
+					<div class="large-6 medium-6 columns" style="float:left;">
+						<label id="displayName-label"></label>
+						<label id="addedon-label"></label>
+					</div>
+				</div><br>
+				<div class="msg-labels"><label id="remove-msg"></label> <label id="remove-auth"></label></div>				
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button remove-integration-btn" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+			<div class="large-12 columns mobile-block">	
+				<div class="msg-labels"><label id="remove-msg-mobile"></label> <label id="remove-auth-mobile"></label></div>				
+				<div class="option-buttons remove-integration-buttons">
+					<label class="remove-popup-cancel"> 
+						<a href="#" id="cancel-remove-integration">cancel</a>
+					</label>
+					<label class="remove-popup-remove">
+						<a href="#" id="remove-integration-btn-mobile"  class="remove-integration-btn">remove</a>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home" >
+				<div class="row">
+				<div class="large-12 medium-12 columns">							
+					<div class="large-6 medium-6 columns config-name"><label>App Configurations</label></div>
+					<div class="large-6 medium-6 columns">
+						<button class="button" data-open="remove-integration-popup" id="remove-all-config">Remove All</button>
+						<button class="secondary button" id="add-config">Add</button>
+					</div>					
+				</div>
+			    </div>
+			    <hr>
+				<div id="instance-list-block" class="row">
+					
+				</div>
+			</div>
+		</div>	
+		<div class="large-12 columns" id="integration-form" >
+			<div class="authenticted-block">Authenticted to App as: <span id="authenticted-to"></span></div>
+			<div class="no-configuration-block" style="display:none">There are no boards available in your App Account. Please create boards in your account and configure<br></div>
+			<form name="form" id="form" method="post">
+				
+				
+				
+				<!-- setup instructions  start-->
+				<div class="row">
+				    <div class="large-12 medium-12 columns"><label class="heading-01">Application Setup Instructions</label></div>					
+					<div class="large-12 medium-12 columns">
+					<p>	<span class="" id="expand-close" title=""> &nbsp;</span>Here are the steps necessary to add the app integration.</p>
+					</div><br><br><br>
+					<div id="showSetup"><br>						
+						<div class="large-12 columns">
+							<div class="large-1 medium-1 columns">
+								<h3><label><b>Step 1</b></label></h3>
+							</div>
+							<div class="large-11 medium-11 columns">
+								<p>Login in to your application account and click on the setup avialable in the top right corner. Click<a href="https://login.salesforce.com" target="_blank"> here</a> to go to Salesforce login page.</p><br>
+								<img alt="" src="https://183.82.99.100:8443/CiscoWebcontent/images/salesforce/salesforce1.png" ><br><br>
+							</div>
+						</div><br>				
+					</div>
+				</div>
+				<!-- setup instructions  end-->
+				
+				
+				<!-- app configuration start-->
+				<div class="row app-config-block">
+					<div class="large-12 medium-12 columns"><label class="heading-01">App Configuration</label></div>
+					<div class="large-12  columns">
+						<p><span class="" id="expand-close-config" title=""> &nbsp;</span>Here are the steps necessary to complete the app configuration.</p>
+					</div>
+					<div class="large-12 columns">					
+						<div  id="showConfig">
+							<div class="large-12 columns sub-config-block">
+								<div class="large-1 medium-1 columns">
+									<label><b>Step 1</b></label>
+								</div>
+								<div class="large-11 medium-11 columns">
+									<p>Click <a href="https://papertrailapp.com/login" target="_blank"> here</a> to go to application dashboard. Click on edit icon which is right side of your <b>Search</b> which you would like to receive notifications.</p><br>
+									<img alt="" src="https://183.82.99.100:8443/CiscoWebcontent/images/papertrail/papertrail5.png" >
+								</div>
+							</div>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-1 medium-1 columns">
+									<label><b>Step 2</b></label>
+								</div>
+								<div class="large-11 medium-11 columns">
+									<p>Scroll down to bottom of the page and click on <b>Webhook</b> under <b>Webhooks</b> section.</p><br>
+									<img alt="" src="https://183.82.99.100:8443/CiscoWebcontent/images/papertrail/papertrail6.png" >
+								</div>
+							</div>
+							<div class="large-12 columns sub-config-block">
+								<div class="large-1 medium-1 columns">
+									<h3><label>Step 3</label></h3>
+								</div>
+								<div class="large-11 medium-11 columns">
+									<p>Copy the below Webhook URL and paste it into <b>URL</b> text box, click on <b>Create Alert</b> button.</p><br>
+									<div class="large-9  columns">
+										<div class="large-2 medium-2 columns">
+											<label>Webhook URL</label>
+										</div>
+										<div class="large-8 medium-10 columns">
+											<input type="text" name="webhookURL" readonly="" id="webhookURL">	
+										</div>
+									</div>
+									<img alt="" src="https://183.82.99.100:8443/CiscoWebcontent/images/papertrail/papertrail7.png" >
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- app configuration start-->
+				
+				
+				<div class="row">
+					<div class="large-12 columns">
+						<h3 class="heading-01">App Configuration</h3><br>
+						<div class="large-10 medium-10 columns" style="float:left;">
+							<div class="large-3 medium-3 columns"><label>App Board</label></div>						
+							<div class="large-6 medium-6 columns text left">
+								<select name="boards"  id="boards" class="dropdown"><option value="0" hidden>Select</option></select><span class="has-tip tip-right" id="tooltip" title="Board, to which would you like to receive notifications for?"
+								data-tooltip><img class="tool-tip"></span>
+							</div>						
+						</div>						
+					</div>
+				</div>
+				
+				
+				<!-- notifications  start-->
+				<div class="row">
+					<div class="large-12 columns">
+						<div class="large-12 medium-12 columns events">
+							<label>Notifications:</label>
+							<div class="events-sub" id="checklists-notifications">
+							    <div class="large-12 medium-12 columns">
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="subnotifications" id="checklist-card-created" value="checklist-card-created"><label for="checklist-card-created">Checklist added to card</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+									
+									<div class="large-3 medium-3 columns checkBox">
+									<input type="checkbox" name="subnotifications" id="checklist-cardmoved" value="checklist-item-created"><label for="checklist-cardmoved">Checklist item created</label>
+									</div>
+									<div class="large-3 medium-3 columns">&nbsp;</div>
+								</div>
+								<div class="large-12 medium-12 columns">								
+									<div class="large-6 medium-6 columns checkBox">
+									<input type="checkbox" name="subnotifications" id="checklist-card-renamed" value="checklist-renamed"><label for="checklist-card-renamed">Checklist renamed</label>
+									</div>
+									<div class="large-6 medium-6 columns">&nbsp;</div>
+								</div>
+							</div>
+						</div>						
+					</div>
+				</div>
+				<!-- notifications  end-->
+				
+				
+				
+				<!-- multiselect start-->
+				<div class="row">
+					<div class="large-12 columns">
+						<div class="large-2 medium-2 columns">
+							<label>Multiselect:</label>
+						</div>
+						<div  class="large-10 medium-10 columns">
+							<div  class="large-4 medium-4 columns issuetypes">
+								<select multiple="multiple" id="issuetypes">
+									<optgroup id="issue-types-options" label="" id="">
+										<option value="story" >story</option>
+										<option value="task" >task</option>
+										<option value="epic" >epic</option>
+										<option value="bug" >bug</option>
+									</optgroup>
+								</select>
+							</div>						
+						</div><br><br>
+						<div class="large-12 columns">&nbsp;</div>
+					</div>
+				</div>
+				<!-- multiselect end-->
+				
+				
+				<!-- files and folders start-->
+				<div class="row">
+					<div class="large-12 columns">
+						<div class="large-2 medium-2 columns small-mobile">
+							<label>App Folders / Files</label>
+						</div>
+						<div class="large-5 medium-5 columns text left input-small-mobile">
+							<select id="resources" name="resource" class="dropdown">
+								<option value='0' hidden>Please Select Folders / Files</option>
+								<optgroup id="group" label="">
+									<option value="all">All Folders & Files</option>
+									<option value="rootfolders">All Root Folders</option>
+									<option value="rootfiles" >All Root Files</option>
+								</optgroup>										
+								<optgroup id="folders" label="Folders">
+									<option value="folders1">Folder1</option>
+									<option value="folders2">Folder2</option>
+									<option value="folders3" >Folder3</option>
+								</optgroup >
+								<optgroup id="files" label="Files">
+									<option value="file1">File1.html</option>
+									<option value="file2">File2.doc</option>
+									<option value="file3" >File3.txt</option>
+								</optgroup > 
+							</select>
+							<span class="has-tip tip-right" id="tooltip" title="Which folders/files would you like to receive notifications?" data-tooltip><img class="tool-tip"></span>
+						</div>
+					</div>
+				</div>
+				<!-- files and folders end-->
+				<hr>
+				
+				
+				<div class="row">
+					<div class="large-10 medium-10 columns">
+						<h3 class="heading-01">Spark Configuration</h3>
+						<br> 
+					<div class="large-8 columns">
+						<div class="large-2 medium-2 columns small-mobile">
+							<label>Room</label>
+						</div>
+						<div class="large-5 medium-5 columns text left input-small-mobile">
+							<select name="room" id="rooms" class="custom-select">
+							<option value='0'>Please Select</option></select><span class="has-tip tip-right" id="tooltip" title="Room, to which would you like to receive notifications for?"
+								data-tooltip><img class="tool-tip"></span>
+						</div>
+					</div><br><br>
+					<div class="large-8 columns">
+						<div class="large-2 medium-2 columns small-mobile">
+							<label>Name</label>
+						</div>
+						<div class="large-5 medium-5 columns text left input-small-mobile">
+							<input type="text" name="displayName" id="displayName" class="integration-name"	value="">
+						</div>
+					</div><br>
+						<input type="hidden" name="userid" id="userid" value="">
+						<input type="hidden" name="username" id="username" value="">						
+						<input type="hidden" name="authenticatedto" id="authenticatedto" value="">
+					</div>
+				</div>
+				<br>
+				<div class="row">
+					<div class="large-5 medium-5 columns" >&nbsp;</div>
+					<div class="large-4 medium-4 columns left" >
+						<button class="button" id="cancel-button">Cancel</button>
+						<button class="button secondary text" id="submit-button">Add Integration</button>
+					</div>
+				</div><br>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

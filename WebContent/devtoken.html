@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Market Place</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css"> 
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+	<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<style>
+.spark-marketplace {width:30%;float:left;}
+.iframe {width:70%;float:right;}
+#token {margin-bottom: 15px;}
+@media screen and (max-width: 600px) {
+	.spark-marketplace {width:100%;}
+	.iframe {width:100%;float:left;}
+} 
+</style>
+	<script type="text/javascript">
+	
+	var user_id = "";
+	var integration_id = "";	
+	var spark_token = "";
+	var spark_refresh_token = "";
+	function getDateTime1 (expireTime) {
+		var current = new Date();
+		var newDate = new Date(current.getTime() + (expireTime*1000));
+		year = "" + newDate.getFullYear();
+		month = "" + (newDate.getMonth() + 1); if (month.length == 1) { month = "0" + month; }
+		day = "" + newDate.getDate(); if (day.length == 1) { day = "0" + day; }
+		hour = "" + newDate.getHours(); if (hour.length == 1) { hour = "0" + hour; }
+		minute = "" + newDate.getMinutes(); if (minute.length == 1) { minute = "0" + minute; }
+		second = "" + newDate.getSeconds(); if (second.length == 1) { second = "0" + second; }
+		return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second;
+	}
+	function saveSparkToken1(){
+		console.log("saveSparkToken...");
+		var jsonObject={};
+		jsonObject["accessToken"] = "ZDM5NGRkNTgtMzA1MC00Nzk4LWIyMTEtNjE0YzA2ZjliZDYwMzBlNjgyODEtYjE4";
+		jsonObject["expires"]=getDateTime1(1209599);
+		jsonObject["integrationId"] = integration_id;
+		jsonObject["refreshToken"] = spark_refresh_token;
+		jsonObject["refreshExpires"]=getDateTime1(6138273);
+		jsonObject["userId"]="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI";
+		var jsonString=JSON.stringify(jsonObject);
+		$.ajax({url: 'https://183.82.99.100:444/api/clients/tokens',
+			async:true,
+			type: "POST",
+			data: jsonString,
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){		
+				console.log("Spark token saved");
+				alert("Spark token saved in DEV");
+				saveSparkTokenResponse="success";
+			},
+			error: function (error) {
+				saveSparkTokenResponse="failure";
+				console.log("error occured while saving spark token");
+			}
+		});	
+	}
+	function saveSparkToken2(user_id){
+		console.log("saveSparkToken...");
+		var jsonObject={};
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mMGU2OWMzYi1lMzU4LTQ3ZTUtODQyYy02MWMxMmRlNTVhY2Q') {//chennakesavulu
+			jsonObject["accessToken"] = "ODZmMWNkMTQtODEwZC00MWFhLWEwNWQtNjdlNjMyZjA0YzY4MDU0NzNkZGMtNTUz";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS83NzcyOTRkNy03NWZmLTQ5YmEtYjE5Yy02NzcyMTExMGYwMjM') {//rajsekhar
+			jsonObject["accessToken"] = "MTM1ZjIxMmQtNWQ5Yi00NWYyLWJmM2MtYjJiZjljMTIyOGIyYzA2NWQxNTItMWRj";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS8wYmQ5MGZjNS0wODZhLTRhZmUtOTI0YS03NzUyOWZiM2U1NTc') {//revathi
+			jsonObject["accessToken"] = "YzFmZjhiYTgtYTBjMS00YWUzLWFmYjAtOGMzNjZmMTBmMjFkZmQyOTAzMDItM2Qx";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS80ZDNlZmY2MS03NWM0LTQ2YmYtOTIxZi02YWZiMzNmMGZjYTg') {//satya
+			jsonObject["accessToken"] = "OTVhMjAyNmMtMjJmMS00YTA4LThlNDgtNzIxNjM1YjAzZGJkMTM0YTQ3OWUtOTg4";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS85MGQ5MzYzNy1jNzlmLTQ0MDAtYTBjNC1mZGQ5MjgwMjJhNmU') {//vikas
+			jsonObject["accessToken"] = "YzJiMzhiMmUtMDMzZS00YTBhLTkzYjItODg2MGRjNDNmYTZlNTNkMjFmNDctMTU3";//updated on 31/03/17
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI') {//surender
+			jsonObject["accessToken"] = "ZDM5NGRkNTgtMzA1MC00Nzk4LWIyMTEtNjE0YzA2ZjliZDYwMzBlNjgyODEtYjE4";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS85ZDE3OTViNC02MWE0LTQ2ZTQtYTZjOC04YTBkMDUwYmRkYTQ') {//surendra
+			jsonObject["accessToken"] = "N2FhMTc2MjItOGE0ZS00MDkwLWIxOTktYTM1MjZmNTFhMWI0Y2Y3MmViNjEtYzg0";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS9lMmRiNWMwOS04MGQ1LTQxYjYtYjU0NS1hZDNlMTkzNWRkMjA') {//harihara
+			jsonObject["accessToken"] = "MzRhMjY5NjQtYjk4YS00ODVjLThiYmQtOTUzODBiMWFjOWVlOTEzYjk2N2MtZDUx";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS8zZmE3MDkwYy04ZWZmLTQwYmYtYjZjZi1hYzI1M2Y2NWY5M2I') {//Pradeep
+			jsonObject["accessToken"] = "NjU5NDY3N2EtMGNlNS00MDAzLThjMjktMjJiOTkxOWY4YWQwNTBhNGRmZjgtOTE5";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS8xYjY4ZmI1NS1kMjAxLTQ4ZmEtOTU3ZC0yZTQ3ODIwNTFmYmI') {//Harish
+			jsonObject["accessToken"] = "NTdkOGI4MGItYmMyOS00NjIxLTlhYjAtOGQ0OWE0ZDRjMzViYTk4MDYxZTUtYWI5";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mMmRlNDJlYi00MzlhLTQzNGQtOTY5ZC1iMDUxYjRhMWNiNWI') {//Anil pani
+			jsonObject["accessToken"] = "MmNkNDQ4YWUtYWQ4Zi00ZmY1LTlhMzAtZjJmOGVkM2Y4NmJiNTljODlmNjItNDE2";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yZDY3MGVkMi01MDZlLTQ2MzctYTQ5MC1hN2UyNWYzZWRmYTc') {//Ravindra
+			jsonObject["accessToken"] = "YmNjYTZhZmYtMzk0MC00ZGMyLWJkODctOTVhZDc3MWRlNzM3Y2ZiZjAzYmMtMzVk";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS9kZTRmNzg1OS05MDExLTRlMGEtYmQwYS03NmJhZGU4NjVhYWI') {//Tirapa
+			jsonObject["accessToken"] = "MmZiNWIxZmQtMGViNC00MmNhLWI0YzQtMTVjMGE5OTA3ZjRmMTRhMWFiMjgtMGU2";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS9jYzU0ZmVlZC04OTZmLTRkZTQtOGYxZC0yMGVjOWUzMGVjYzk') {//Nisha
+			jsonObject["accessToken"] = "MGFiMGJjZWEtODNiMC00YWM2LWFlNjUtNzhiZmFlZGUzZmJhNDgxNjIxZGEtZTkw";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yZTdjMWRjMy05ZTVjLTRkODctOGM4Mi1hMjAzYTg2OWI1Y2U') {//power user
+			jsonObject["accessToken"] = "YmJiYzE3OGQtNTU5ZC00NGM3LWI5YzctMzFkODJkYTJiYWM0NDYyNmZhYTUtNmIy"; //updated on 17/02/17
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS83MjU0NzFlYi05ZDI0LTRkOTItYmQxMy1mMzU4ODJkY2U0NTE') {//Anil Nayak
+			jsonObject["accessToken"] = "MzMxZmNjZTctOTIzMi00ODM3LWI0MDEtNTk2M2E5ZDBhOTdkMjQ2NzZiMTktZGZi";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mNTUxNGM0Yi04NDk0LTRkMzMtYmNmMy0wZGUzMzM3NDFkZDI') {//Sudharsan
+			jsonObject["accessToken"] = "NDllNTdhMzEtMGRmMi00OTgxLWFjMDYtZmIwZGJjMmQ4MzEzNDJhNzYzNDYtNzdm";
+		}
+		if(user_id=='Y2lzY29zcGFyazovL3VzL1BFT1BMRS8xMTVkMWVhOC0xNDg1LTRjMjItYTkwYS05M2E5MDI3NTkwOTM') {//lokesh
+			jsonObject["accessToken"] = "ZTM3Y2JhZDctMTc0MS00NWRiLWFmMWMtMGYyODU3YjAyZmE3MjNiODQ5YmUtMTM2";
+		}
+		jsonObject["expires"]=getDateTime1(1209599);
+		jsonObject["integrationId"] = integration_id;
+		jsonObject["refreshToken"] = "";
+		jsonObject["refreshExpires"]=getDateTime1(6138273);
+		jsonObject["userId"]=user_id;
+		var jsonString=JSON.stringify(jsonObject);
+		$.ajax({url: 'https://183.82.99.100:444/api/clients/tokens',
+			async:true,
+			type: "POST",
+			data: jsonString,
+			contentType: "application/json",
+			dataType: "json",
+			success: function(result){		
+				console.log("Spark token saved");
+				alert("User Spark token saved in DEV");
+				saveSparkTokenResponse="success";
+			},
+			error: function (error) {
+				saveSparkTokenResponse="failure";
+				console.log("error occured while saving spark token");
+			}
+		});	
+	}
+
+	$(document).ready(function(){
+
+		$("#add-config").click(function (e){
+			
+			console.log("here");
+			integration_id = $("#intId").val();
+			
+			user_id = "Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI";//$("#user_id").val();
+			
+			//bit
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M5N2Y4OGZhMjEzYWRiMWNlMzkwNmNjYWZhNDMwN2QxYWJkMWU0NzI1YmJhYTEzN2ZjMTlhYWRjZDE3ZDRhODNj") {
+				spark_token = "ZGUyOWEwNTMtZWNhOS00MTFiLTlkMDUtZDEyODExMDE5ZWNiZmY2OThhNjktNWMw";
+				spark_refresh_token = "ZWYyNDI3YTItNjcwYS00NmFmLWFjNDctM2EwZjM5ODNmOGQ0NDk4Y2FkYjQtNGVk";
+			}
+			//trello
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4ODIwNTU1MzlhMzdhOWU5NjFlNzViNDFhODI5ZDExOGMzYzBhNjZlMmJlZTFiZmEwYzBjZGMxOTc3OTI0MzUw") {
+				spark_token = "YzEyODJhNWEtNjhmNC00NTBjLWEyZjctYmQ5NzE2MGZhZjI0ZjMwZGJlYWMtMjM4";
+				spark_refresh_token = "YzkyNzA4Y2EtZmY5My00NWM1LWIyOGItNGQ2MDU4ZDMxMzhkMWMyOGQ1MDctOWZk";
+			}
+			//codeship
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MyM2UxYjkyYjEzODVkMGI4YTQ4NjM5NTY5MjgxMDYxY2NlM2IzYTg3OGI5NjAwZjIyZWE0ZWNmN2E1MzNkOTEy") {
+				spark_token = "Zjk5NjgzMDktZGJkZi00NDNlLTg1OTQtNjg2MmRiYzdiMjk2YjZjYzU5MzMtMGY5";
+				spark_refresh_token = "MWRjMDgxOTQtYjhhYy00NzhlLTk1NjYtMjMyOGE1N2UwZDMxYWMwNTBkYjctYTBj";
+			}
+			//github
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzZTFmZmY0OTU5MzNmYWFiOTQ1MGQ1Yjg0NDY5MTU2M2QwNzk2NDNiNmNiOTViNmU0ZDg4ZDk2NWVlMjhkYTYz") {
+				spark_token = "OGI1Mzc2ZDUtMWQ3ZC00M2Q4LWJiNDktMTNmNTk0ZGY2YmMzN2MwMWM5OGYtYzFl";
+				spark_refresh_token = "NThjNWUxNmYtMWJjOC00N2YzLTk3NjMtNWZmNjhkYTVjZGQ0MThjZjdjMjItNjk4";
+			}
+			//pagerduty
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M1YzkzYjk5NTU4MzZjODVlM2UwMjgyOTE5ZWJiM2FlMDZkZDQ4YWQyMTBlYzY0OGYwNDQyODE5ZmUzYzYwN2Uy") {
+				spark_token = "NjZmZTlhYjctNjFhZC00M2M1LTk1MWUtMmMyOWQwZjBiNDEzZmZjNGFjYmUtYTE3";
+				spark_refresh_token = "NTE1NjczMzAtMDIyZC00MDBlLWI0NjYtNjk4ZjU4N2Q1Njk5NzJjMDljNTktYTRj";
+			}
+			//Box
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwYTM3MTUyYWZjNjJkNTZhN2RkZTYwOTdlZjI1OTQ2YmU0NDY3NTcxMWZlZmE4MmNmYzQ3NjY5MjU1NzllZWQy") {
+				spark_token = "ZjJiZGY0OTYtMzc4NS00NWE1LTlhMDgtZDVlMjdkYWMzODBiNzliNWFmMjEtZDY4";
+				spark_refresh_token = "MjYwOGI3NzctOTg2MC00ZGUwLWIwNjMtNWE2OTI3ODBjYzllMDM4MzE3Y2UtZmU1";
+			}
+			//JIRA
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4MDhhY2YzNTA1NjFiNjg5NmNkYWJhOWEzMjg5MDYwYWU2Y2E5YWRmODZmNDVlNGZlMzQ3ZTgxNDY4NWQ2ODA3") {
+				spark_token = "ZjQ2OTBlY2YtNDc1MS00ZWVhLWI0ZjctMjc2ZjJhMjIxMDVmMTk2ZTJmMjUtNDdi";
+				spark_refresh_token = "NGMxMWRiMTktNWM1Ny00ZjYzLTk3ZjctYTMwZTU0NzAyMmI4YzNhNjc3NmUtNWM5";
+			}
+			//Mailchimp
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NlYzFiMzYyM2ExNWQ3ZDgzNjc4Y2NmMWNjZjczMzYxODcxNDA4ZTVjNTEzNmY4YzAzNTJlYjY0MTc3YmQwMTE2") {
+				spark_token = "NWIyMWJkYmMtYjA1Ny00YWNjLTllMzEtNTY4MGY4OWMxODI1OTBjY2ZiMWQtMGI0";
+				spark_refresh_token = "MDk1ODFmZDAtOWIxOS00MzJiLTg3MTUtN2NhZDhhZGUzODBiOTZhZGViNWEtZDdl";
+			}
+			//New Relic
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M1YWZmMTVmODMxMjE4YWI0NmMzMGNmNTI0ZDU5YmJkNTA3NWFmMjVmM2RjNzYxYjEwYjA5MmZhYmUyZmVmNTJl") {
+				spark_token = "YmUzZTllYjAtNDIzNC00NWI4LTk2MTMtYTk3YzQ5ZmMxYjlkOGVkYTAwMzAtNjk3";
+				spark_refresh_token = "ZTI4OGMyNDctNDM4ZS00MjIwLWFiYzctZmM2Y2U2MGZiMDk1ZmNmNDBiOTUtNTA2";
+			}
+			//Salesforce
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzOTkxMzY0ZGFmOTk5YmM3ZWI1OGYzNTdiOWY1MjdjMDRhZmNlYzYxMjliMjRmZDI2NzQzNzFmYzlmYTczNTIy") {
+				spark_token = "YzBjMTk1ZTktMWMwYy00ZDE5LWE2MDMtNWZmYTlkOTBhODliYTFlMTc1MmYtMjAz";
+				spark_refresh_token = "MTA3ZWJiMjItNzI5MS00MTUwLTlmOTgtMDhkYTZkMWE5MDQ0MDc4YjIwYzgtYzQz";
+			}
+			//ServiceNow
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M0NTExM2QzY2Y5YWVlYmY4Zjk4NDg5OGE3YTBmM2M2MTk2MjEzODBjMzY0MzU4ZTBmNTBjNmQwZjRhYTk3N2Fk") {
+				spark_token = "NTdjYTBlZTQtM2VlZC00YzRiLTk5ZTctZDBmMGViODM0ZTBmMmE1ZDU2YTQtNzRi";
+				spark_refresh_token = "NTZmNDcxZTktNDFiZS00OWUxLThlY2QtZjA3YmVkMWVhYzQ5YjdiYmQyZTktMjc3";
+			}
+			//Google Drive
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzNWJhMWNlYTVlNWMwNDdhNmYwNTc1ZjE1NjU0MWZiMmY1OGQ1NDczMDdkNmUyMWYzNDQ3NzBiNzdmOGMxNWFh") {
+				spark_token = "ZTMyYzhhYWMtODliOC00MGViLWJkMDktMDBjYjhlYjQ4OWZjMzkyNDA4MDctMjQx";
+				spark_refresh_token = "ODAzYjU1ZjEtMGU5ZS00ZjRmLTk3YjEtMTVlNzUyNGE4NTVjMDgxMjBkNTEtNzY4";
+			}
+			//Zendesk
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M3MTAzMmMwZmI5YWE5ZWRjNTIzZGM5MWZiMWY4MmU0ODMxYjQ1OGVlMGE2M2NiZDE0NDI0MDQ5MjE1ZDU3M2Uw") {
+				spark_token = "ZDNjMWRlYmYtNzExOC00MTE1LWEzODctMDQ1YTViMjlmMjczMTY3MWYxMTYtY2I0";
+				spark_refresh_token = "YWViMGE2MGEtOTI0NC00ZDc2LTliNmYtNTk1YjQyMTdkOWY5MGY1ODgxNzAtMzVl";
+			}
+			//Dropbox
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NkM2JmMmU2YTQxNmE3NDg0ZGE5OGYyNGFkOTljZTMwZjYzYTczNTBmNGY0MzBjMWFkZjk0M2E0ODcxZDZkZGYx") {
+				spark_token = "N2I0NzFhM2QtOGMxMy00MGI0LWFlY2EtM2ExZWI0MDc4MzQxYzljMjlkYWUtYmIx";
+				spark_refresh_token = "NDNjZGMxNTAtMjQyYy00MmY0LTg3ZmEtNTRmY2NlNWQ5MTEwMTdjMDEzMzctNGRh";
+			}
+			//Jenkins
+			if(integration_id=="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NiN2Q1NTI3ZGVmMTI1ZmJkNWIxNTQ3ZDc2MmUxMTUxMTY4YmZmMDA1Y2NhZmQ0MjY5ODZiYzI3OGQ1ODMxNTVi") {
+				spark_token = "YTI2NWNmMjYtNWJkNS00NTA2LWE0NzQtNTg1ZWI2ZGI3MTkzZmI3MzNmNDMtZmI0";
+				spark_refresh_token = "MWJmZGRjNmMtYjNjOC00NDk4LWJmMWUtYTEwM2ZhOTk3NjdlZTZhZWM0OGUtNmM4";
+			}
+			
+			
+			if(integration_id==0){alert("Please select Integration");} else {
+			
+				var user_id=$("#user_id").val();
+				if(user_id!='Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI') {
+					saveSparkToken2(user_id);
+				} else {	
+					saveSparkToken1();					
+				}
+				//$("#guestFrame1").attr('src', "https://cisco-spark-integration-management-new-dev.cloudhub.io/api/integrations/htmlContent?action="+action+"&integrationId="+id+"&userId="+token);
+			}
+		});
+	});
+
+	</script> 
+
+
+</head>
+
+<body >
+
+<div class="spark-marketplace">
+	<h1>Market place</h1>  <br>
+	<div class="large-12 medium-12 columns">
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>Integration App</b></label></div>						
+			<div class="large-10 medium-10 columns" >
+			<select name="int_id"  id="intId" class="dropdown">
+				<option value="0">Select</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M5N2Y4OGZhMjEzYWRiMWNlMzkwNmNjYWZhNDMwN2QxYWJkMWU0NzI1YmJhYTEzN2ZjMTlhYWRjZDE3ZDRhODNj">Bitbucket</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4ODIwNTU1MzlhMzdhOWU5NjFlNzViNDFhODI5ZDExOGMzYzBhNjZlMmJlZTFiZmEwYzBjZGMxOTc3OTI0MzUw">Trello</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzZTFmZmY0OTU5MzNmYWFiOTQ1MGQ1Yjg0NDY5MTU2M2QwNzk2NDNiNmNiOTViNmU0ZDg4ZDk2NWVlMjhkYTYz">GitHub</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M1YzkzYjk5NTU4MzZjODVlM2UwMjgyOTE5ZWJiM2FlMDZkZDQ4YWQyMTBlYzY0OGYwNDQyODE5ZmUzYzYwN2Uy">PagerDuty</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MyM2UxYjkyYjEzODVkMGI4YTQ4NjM5NTY5MjgxMDYxY2NlM2IzYTg3OGI5NjAwZjIyZWE0ZWNmN2E1MzNkOTEy">Codeship</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwYTM3MTUyYWZjNjJkNTZhN2RkZTYwOTdlZjI1OTQ2YmU0NDY3NTcxMWZlZmE4MmNmYzQ3NjY5MjU1NzllZWQy">Box</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4MDhhY2YzNTA1NjFiNjg5NmNkYWJhOWEzMjg5MDYwYWU2Y2E5YWRmODZmNDVlNGZlMzQ3ZTgxNDY4NWQ2ODA3">JIRA</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NlYzFiMzYyM2ExNWQ3ZDgzNjc4Y2NmMWNjZjczMzYxODcxNDA4ZTVjNTEzNmY4YzAzNTJlYjY0MTc3YmQwMTE2">MailChimp</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NjMjUxNjg1MDgwNDExMDNiZThiODQ5Mjg3NzkzZmEyNjE2ZGViMjM5MmM3MjU0ZmZmYTk3M2NjMTg4MzQ5MWQy">Wunderlist</option>							
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M1YWZmMTVmODMxMjE4YWI0NmMzMGNmNTI0ZDU5YmJkNTA3NWFmMjVmM2RjNzYxYjEwYjA5MmZhYmUyZmVmNTJl">New Relic</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzOTkxMzY0ZGFmOTk5YmM3ZWI1OGYzNTdiOWY1MjdjMDRhZmNlYzYxMjliMjRmZDI2NzQzNzFmYzlmYTczNTIy">Salesforce</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M0NTExM2QzY2Y5YWVlYmY4Zjk4NDg5OGE3YTBmM2M2MTk2MjEzODBjMzY0MzU4ZTBmNTBjNmQwZjRhYTk3N2Fk">ServiceNow</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzNWJhMWNlYTVlNWMwNDdhNmYwNTc1ZjE1NjU0MWZiMmY1OGQ1NDczMDdkNmUyMWYzNDQ3NzBiNzdmOGMxNWFh">Google Drive</option>	
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M3MTAzMmMwZmI5YWE5ZWRjNTIzZGM5MWZiMWY4MmU0ODMxYjQ1OGVlMGE2M2NiZDE0NDI0MDQ5MjE1ZDU3M2Uw">Zendesk</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NkM2JmMmU2YTQxNmE3NDg0ZGE5OGYyNGFkOTljZTMwZjYzYTczNTBmNGY0MzBjMWFkZjk0M2E0ODcxZDZkZGYx">Dropbox</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NiN2Q1NTI3ZGVmMTI1ZmJkNWIxNTQ3ZDc2MmUxMTUxMTY4YmZmMDA1Y2NhZmQ0MjY5ODZiYzI3OGQ1ODMxNTVi">Jenkins</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NmYzVjOWMzZWQxY2E5ODRkOTc5YTUyYzFiMjUxOWI2NjYyZDNhODkxNDRlNDJiZDJhY2UzYzg0MzJiNGI2ZDQy">DocuSign</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzODZkYTNhNjFhOGZkYzBmOWI2NDVkNjAzYWZmMjM1ODUxODBkYWIzMTdjN2ExMDMzMmJkOWYxOGE2MmJjNzUy">Stripe</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MxODBkYWYwM2Q3ZGEwOTcwNTQzMzQ5OTllMmQ2NGYxYTU2ZDRlMDRjMzIzMGM3NjEzMmE3NjUwYzkwY2ZkMmM3">Papertrail</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwNWIzYzU5OGNiY2VkMGIyY2E0YjlhNjZmZDI5YjQyYjNkMzVmOTI2ZTgzNzNkYTU1N2ViYjY1ZTBiZmZlOTQ5">Basecamp</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M4NTcwMGQzNjA0Y2RhYWM1YWMyZmY3NDNlMDExMjBjZDExOTdkOGY4OTE5NzQ3ZmQwMmY3ZDRiYmZlOGEyMWM0">Twitter</option>	
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzZTYxZWM5ZDAzNTMwZTNjNTc0MTQ2YjdmMzVjOTllYjFmMGQzOGJiOTA2OWEyNGIzZjM2MTY2NTAwMzFhNTIw">OneDrive</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwNWY1MWQ2MTFiYzFkOTU0MjY3NWY1ZmQ3N2RkMWI0YTRhZDI5ZTEyZTc1YTc0ZGVhNjQ2ZDcwOTgzY2ZkZjcz">GoogleCalendar</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NjMmU4YzdiZDVhNmM4YTE5NzQ0ZTBkMTdjZGQzODU4MGZlNmU0ZDFlNWY5MTQ1ZTc1NjgyNzNiMGI3MTBlYWM1">UserVoice</option>				
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MxOGZiZWJkMmQ4OWQ1Y2JiYTZlYzY3OGE0MzNhYWQ3YzYyZjMyYzBhZWU4NWU2MGEwMDE4ZDI5NjRlZmZjNmFi">Asana</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MzYzRlMmVlZGNhYjZhNDY3ZTk4MjM1ZjllMjdiMDZlZjIwZDRkMzJjMjI2ZjYyYTBlYmZmMzUxMTY4MzczMjVj">Jive</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NkMTFhNjJiMzE2OTcyMzQzNTEyM2MzNDI2NWQyNDM0Yzk3Yzc4NWQ4ODU0ZTI1ZDdmOTI4Zjg4NzgwMTVlMmI2">OneDrive for Business</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NmZmQ0YmU4YWVjY2UxZTc2NDQ3YTA3YTVhMTdhOTE2ZjlhNTM1OTBhNDc2ZjEzOTFhZmJjZjMyZmI3ZWI2Yjkx">SmartSheet</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M0MGFlZTgzYTk3ZWQyNjMyNTg1Y2EwMTU1OWU2MDM4MmY1NTYwOTkwODQwNGI0ZmYyMTU3Mzk1ZjFkZWUwODVm">Sharepoint</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NlMmM5YTRhZGIzOTY3YWRjMjIyNjIzYTk0N2VlZGY3ZmMyNWZhN2EyMWZmMWE5ZTk1Y2U2MWE0YjA2NWYyN2Y1">EverNote</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwNWIzNDk4ZmMwZDAxN2NkMTIyNDZjMjA2NDA1YmZiMDE1MzRjYjdjYThhOGJjOWUyMGNiNTc2YjQxMTA2OGRj">RSS</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0NmNTYxMjk0ZGUxYTgwZDE2OTdhM2UxMjUyNGEzZjZiZTUxNjBlOTA3NGY1NDY3NmY2MDkzZjJkMzdlMGM5ODJi">Office 365 Calendar</option>
+				<option value="33" style="display:block;">SalesforcePoll</option>
+				<option value="34" style="display:block;">Marketo</option>
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0M3MjU0ZTk0OWFkNjY1ODlmZjA0MDVmZDRhMzM2YjY1NmNkOTE0OWI1ZGVhYzdhNTAyNDM5MTIyZTMwYjg4MGM1" style="display:block;">xMatters</option>
+				<option value="37" style="display:block;">Marketo Polling</option>
+				
+			</select>
+			<!--<input type="text" name="int_id" id="intId" value="1" placeholder="Id">-->
+			</div>
+		</div>
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>User ID</b></label></div>
+			<div class="large-10 medium-10 columns">
+				<!--<input type="text" name="int_id" id="user_id" style="width:250px" value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI">-->
+				<select name="user_id"  id="user_id" class="dropdown">
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yYTA0YzVkMy0yNGJjLTQ1ZWItYmQzYS05ZDU1OGRmMmZhMjI">Surender</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS9lMmRiNWMwOS04MGQ1LTQxYjYtYjU0NS1hZDNlMTkzNWRkMjA">Hari Hara</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mMGU2OWMzYi1lMzU4LTQ3ZTUtODQyYy02MWMxMmRlNTVhY2Q">Chennakesavulu</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS83NzcyOTRkNy03NWZmLTQ5YmEtYjE5Yy02NzcyMTExMGYwMjM">Rajasekhar</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8wYmQ5MGZjNS0wODZhLTRhZmUtOTI0YS03NzUyOWZiM2U1NTc">Revathi</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS85ZDE3OTViNC02MWE0LTQ2ZTQtYTZjOC04YTBkMDUwYmRkYTQ">Surendra</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS80ZDNlZmY2MS03NWM0LTQ2YmYtOTIxZi02YWZiMzNmMGZjYTg">Satya</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS85MGQ5MzYzNy1jNzlmLTQ0MDAtYTBjNC1mZGQ5MjgwMjJhNmU">Vikas</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8zZmE3MDkwYy04ZWZmLTQwYmYtYjZjZi1hYzI1M2Y2NWY5M2I">Pradeep</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8xYjY4ZmI1NS1kMjAxLTQ4ZmEtOTU3ZC0yZTQ3ODIwNTFmYmI">Harish</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mMmRlNDJlYi00MzlhLTQzNGQtOTY5ZC1iMDUxYjRhMWNiNWI">Anil Pani</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yZDY3MGVkMi01MDZlLTQ2MzctYTQ5MC1hN2UyNWYzZWRmYTc">Ravindra</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS9kZTRmNzg1OS05MDExLTRlMGEtYmQwYS03NmJhZGU4NjVhYWI">Tirapa</option>
+				<!--<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS9jYzU0ZmVlZC04OTZmLTRkZTQtOGYxZC0yMGVjOWUzMGVjYzk">Nisha</option> -->
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS83MjU0NzFlYi05ZDI0LTRkOTItYmQxMy1mMzU4ODJkY2U0NTE">Anil Nayak</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mNTUxNGM0Yi04NDk0LTRkMzMtYmNmMy0wZGUzMzM3NDFkZDI">Sudharsan</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8xMTVkMWVhOC0xNDg1LTRjMjItYTkwYS05M2E5MDI3NTkwOTM">Lokesh</option>
+				<option value="Y2lzY29zcGFyazovL3VzL1BFT1BMRS8yZTdjMWRjMy05ZTVjLTRkODctOGM4Mi1hMjAzYTg2OWI1Y2U">Power User</option>
+				</select>
+			</div>
+		</div>
+
+	</div>
+
+	<div class="large-8 medium-8 columns"><br>
+		<button class="button" id="add-config">Submit</button>
+	</div>
+</div>
+<br>
+<!--  <iframe id="guestFrame1" name="guestFrame1" width="500px" frameborder="0" src="http://183.82.99.100:7080/CiscoWebcontent/createbitbucket.html?integrationId=ABCDEF&token=1234567">
+-->
+<div class="iframe">
+	<iframe id="guestFrame1" name="guestFrame1" width="100%" frameborder="0" src="">	</iframe>
+	<br><br>
+<!--<h3>Footer</h3>-->
+</div>
+</body>
+</html>

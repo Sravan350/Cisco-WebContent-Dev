@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Git Hub Integration to Spark</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css">
+<link href="css/collab-ui.css" rel="stylesheet" type="text/css">
+<link href="css/collab-ui.min.css" rel="stylesheet" type="text/css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script>
+<script type="text/javascript"  src="http://183.82.99.100:7080/IframeTest/porthole.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+<script src="js/collab-formly.js"></script>
+<script src="js/collab-ui.js"></script>
+<style>
+.loading-second-block {	margin-top: 15%;} .loading-image {margin-left: 44%;}
+.success-integration-second-block {margin-top: 25%;} #loading-block {background: lightgray;}
+.events .events-sub label { float:left; width:50%;}
+.events input[type="checkbox"] { position: relative; margin:0 0.5rem 0 0;width: 0.85rem; height: 0.85rem;}
+#add-config {padding: 0.85rem 3rem;}
+#remove-all-config {padding: 0.85rem 2rem;}
+.integrations button{float:right;margin:0 0.5rem 0 0;}
+#remove-all-config{display:none;}
+#success-integration {position: fixed;background: lightgray;width: 70%;margin-left: 15%;}
+.cross-mark:hover{float:right;background-color: #f5f5f6  ;}
+.close-button {line-height: -1 !importtant; right: -6rem;top: -0.5rem;background-color: #ffffff;}
+.close-button:hover{background-color: #ffffff;}
+.cross-mark {cursor: pointer;margin: 0.3rem 1rem 0 0; padding: 0.8125rem 1rem 0.625rem;float:right;
+	background: transparent url("http://183.82.99.100:7080/IframeTest/images/crossmark.png") no-repeat scroll right center / 60% auto;}
+.integration-details img {float:left;width:80px;height:80px;}
+.integration-details .columns {float:left;}
+</style>
+<script>
+/* 	function onMessage(messageEvent) {
+		if (messageEvent.data["resize"]) {
+			document.body.bgColor = messageEvent.data["resize"];
+		}
+	}			
+    function gup(url, name) {
+        name = name.replace(/[[]/,"\[").replace(/[]]/,"\]");
+        var regexS = "[\?&]"+name+"=([^&#]*)";
+        var regex = new RegExp( regexS );
+        var results = regex.exec( url );
+        if( results == null )
+            return "";
+        else
+            return results[1];
+    }
+    function resize(){       
+        console.log(document.body.scrollHeight);
+        console.log($(".integration-app").height());
+		// var height = $(".integrations").height()+30;
+		var height = document.body.scrollHeight+20;
+		var width =  document.body.scrollWidth+20;
+		console.log(height);
+		console.log(width);
+    	windowProxy.post({'resize':true,'height':height,'width':width});
+    	console.log("inresize");
+    }
+	function connectIntegration(){       
+		console.log("connectIntegration");
+    	windowProxy.post({'connectIntegration':true,'statusCode':200});
+    }
+	function disconnectIntegration(){       
+		console.log("disconnectIntegration");
+    	windowProxy.post({'disconnectIntegration':true,'statusCode':200});
+    }
+var windowProxy; */
+$(document).ready(function() { 
+	
+	$('#integrations-block').show();
+	$('#integration-form').hide();
+	
+	/* windowProxy = new Porthole.WindowProxy("http://183.82.99.100:7080/IframeTest/proxy.html"); 
+	windowProxy.addEventListener(onMessage);		
+    var url = window.location.href;
+    console.log(url);
+    var integrationId = gup(url,"integration_id");
+	var token = gup(url,"token");
+	var action = gup(url,"action");
+    console.log("integration Id = "+integrationId);
+    console.log("token = "+token);        
+	integration_id =integrationId;
+	spark_token = token;
+	setTimeout(resize, 200);
+    //resize(); */
+	/*  if(action=="connect") { 
+		$("#integrations-block").hide(); 
+		$('#home').show();
+		$('#integration-form').hide();
+		loginSuccess(); 
+		setIntegrationAppAuthDetails(integration_id);
+		
+	 } else if(action=="disconnect") {
+		removeAllIntegrationInstances("disconnect");
+		 //disconnectIntegration(); 
+	} else { //action list
+		console.log("list");
+		listIntegrations();
+	}	 */ 
+	
+});
+
+var OAUTHURL    =   '';
+var CLIENTID    =   '';
+var TYPE        =   'code';
+
+var auth_url="applications";
+var token_url="tokendetails/bitbucket";
+/* var form_data_url="uisettings/bitbucket"; */
+var form_data_url="test.html";
+/* var post_form_data_url="saveintegration/bitbucket"; */
+var post_form_data_url="test.html";
+/* var list_instances_url="listinstances/bitbucket"; */
+var list_instances_url="test.html";
+/* var update_form_data_url="updateintegration/bitbucket"; */
+var update_form_data_url="test.html";
+var delete_instance_url="deleteInstance";
+var removeall_integration_instances_url="bitbucket/removeallinstances";
+var disconnect_integration_url="disconnectintegration";
+
+/* function setIntegrationAppAuthDetails(int_id) {
+		console.log("int_id.."+int_id);
+		$.ajax({url: auth_url+"?integration_id="+int_id,
+			async: false,
+			success: function(result){
+			console.log("result"+JSON.stringify(result));
+				CLIENTID=result.clientid;
+				OAUTHURL= result.authoriseurl				
+				OAUTHURL=OAUTHURL+'?client_id='+CLIENTID+'&response_type=code';
+				loginWithAuthDetails();	
+			}
+		});		
+	}
+    function loginWithAuthDetails() {
+		console.log("OAUTHURL login url..."+OAUTHURL);
+        var win = window.open(OAUTHURL, "windowname1", 'width=600, height=600'); 
+        var pollTimer = window.setInterval(function() { 
+            try {
+				console.log("login. window.."+win.document.URL);
+                if (win.document.URL.indexOf("code") != -1) {
+                    window.clearInterval(pollTimer);
+                    var url =   win.document.URL;
+                    console.log("url"+url);
+                    acToken =   gup(url, 'code');
+                    tokenType = gup(url, 'token_type');
+                    expiresIn = gup(url, 'expires_in');
+                    win.close();
+                    validateToken(acToken);
+                }
+            } catch(e) {
+            }
+        }, 100);
+    }
+function validateToken(code) {
+	console.log("code..."+code);
+	saveIntegrationAppToken(code);
+	resize();
+}		
+function saveIntegrationAppToken(code) {
+	$.ajax({url: token_url+"?code="+code+"&integration_id="+integration_id+"&token="+spark_token,
+		async: false,
+		success: function(result){
+			console.log(result)
+			integration_token=result.access_token;
+			connectIntegration();
+			loadForm();
+			$('#integation-form').show();
+		}
+	});
+} */
+//After Login Success
+var integration_id="";
+var integration_token="";
+var spark_token="";
+var listResultData="";
+var instanceData="";
+var formData="";
+var formAction="add";
+var instanceId="";
+var repo_modified=false;
+var room_modified=false;
+var repo_name_old="";
+var room_id_old="";
+
+ function listIntegrations() {
+	 console.log("in func()");
+	 $('#integration-form').hide();
+	  $('#integrations-block').show();
+	 var listDataHTML="";		
+	$.ajax({//url: list_instances_url+"?token="+spark_token+"&integration_id="+integration_id,
+		url:list_instances_url,
+		async: false,
+		success: function(result){	
+			$("#instance-list-block").show();
+			console.log("in success before if");
+			console.log("localStorage.getItem('gitHubFormData') " + localStorage.getItem("gitHubFormData"));
+			//listResultData=result;	
+			if(localStorage.getItem("gitHubFormData")==null){
+				console.log("in success if");
+				$("#instance-list-block").html(listDataHTML);
+			}else{
+				 console.log("in success else");
+				    listDataHTML+='<div class="large-12 medium-12 columns">';
+					listDataHTML+='<div class="large-8 medium-4 columns integration-details">';
+					listDataHTML+='<img src="images/wunderlist/wunderlist_1.png" alt="Wunderlist">';
+					listDataHTML+='<span>Wunderlist</span><br>';
+					listDataHTML+='<span>Flow Test</span><br>';
+					listDataHTML+='<span>Added: 2016-06-21</span>';
+					listDataHTML+='</div>';
+					listDataHTML+='<div class="large-3 medium-3 columns">';
+					listDataHTML+='<span class="cross-mark remove-config" data-open="remove-integration-popup" ></span>';
+					listDataHTML+='<button class="button edit-config">Edit</button>';
+					listDataHTML+='</div>';
+					listDataHTML+='</div><br><br><br><br>';
+					 $("#instance-list-block").html(listDataHTML);
+			}
+		}
+	});		
+	/* $.each(listResultData, function(i, instance) {
+		var configData=JSON.parse(instance.configJson);
+		listDataHTML+='<div class="large-12 medium-12 columns">';
+		listDataHTML+='<div class="large-6 medium-6 columns">';
+		listDataHTML+='<span>'+configData.description+'</span><br>';
+		listDataHTML+='<span>'+configData.room_name+'</span><br>';
+		listDataHTML+='Added: <span>'+instance.createdDate+'</span>';
+		listDataHTML+='</div>';
+		listDataHTML+='<div class="large-2 medium-2 columns">';
+		listDataHTML+='<button class="button edit-config" id='+instance.instanceId+'>Edit</button>';
+		listDataHTML+='<button class="button remove-config" id='+instance.instanceId+'>Remove</button>';
+		listDataHTML+='</div>';
+		listDataHTML+='</div><br><br><br><br>';
+		integration_token = instance.IntegrationToken[0].accessToken;				
+	});
+	
+	if(listResultData.length<=1){ $("#remove-all-config").hide();}
+	else { $("#remove-all-config").show();}
+	$("#integrations-block").show(); */
+}
+ function objLength(obj){
+		var i=0;
+		for (var x in obj){
+			if(obj.hasOwnProperty(x)){
+				i++;
+			}
+		} 
+		return i;
+	}
+	
+	function addOrUpdateInstance() {
+		$("#submit-button").text("Add Integration");
+		var res = $('form').serializeObject();
+		var selectedRoomName=$("#rooms option:selected").text();
+		res = JSON.stringify($('form').serializeObject());//static
+		console.log(res);//static
+		localStorage.setItem("gitHubFormData",res);//static
+		/*var jsonData = {};			
+		jsonData["room_id"] = $("#rooms option:selected").val();;									
+		jsonData["integration_id"] = integration_id;
+		jsonData["integration_token"] = integration_token;
+		jsonData["spark_token"] = spark_token;
+		jsonData["user_id"] = $("#userid").val();
+		jsonData["config"]={};
+		jsonData["config"]["room_name"]= selectedRoomName;
+		jsonData["config"]["repo_id"] = res.lists;
+		jsonData["config"]["repo_name"]= ($("#repos option:selected").text()).toLowerCase().replace(" ","-");
+		jsonData["config"]["user_name"] = $("#username").val();
+		jsonData["config"]["owner_name"]=$("#ownername").val();
+		jsonData["config"]["description"]= res.description;
+		jsonData["config"]["notifications"]={};			
+		jsonData["config"]["notifications"]["commitEvents"] = res.commitEvents;
+		jsonData["config"]["notifications"]["issueOrPullReqEvents"] = res.issueOrPullReqEvents;
+		jsonData["config"]["notifications"]["deployEvents"] = res.deployEvents;
+		jsonData["config"]["notifications"]["otherEvents"] = res.otherEvents;
+		
+		 if(formAction=="update") {
+			jsonData["instance_id"] = instanceId;
+			jsonData["repo_modified"] = repo_modified;
+			jsonData["repo_name_old"] = repo_name_old;
+			jsonData["room_modified"] = repo_modified;
+			jsonData["room_id_old"] = room_id_old;
+			post_form_data_url=update_form_data_url;
+			console.log("update integration");
+		} 
+		var jsonString = JSON.stringify(jsonData);
+		var jsonString = JSON.stringify(jsonData);
+		var notificationslength = objLength(res.repo);
+		notificationslength+=objLength(res.issue);
+		notificationslength+=objLength(res.pullrequest);
+		if(notificationslength==0) {
+			alert("Please select atleast one Event");
+		} else { */
+		//console.log(jsonString);
+		$('.loading-second-block').html('Selected Room is '+ selectedRoomName);
+		$('#loading-block').foundation('open');
+		$.ajax({url: post_form_data_url,
+			async: false,
+			type: "POST",
+			//data: jsonString,
+			//contentType: "application/json",
+			//dataType: "json",
+			success: function(result){				
+				$('#loading-block').foundation('close');
+				$('#success-integration').foundation('open');
+				$('#done-button').click(function() {
+					$('#success-integration').foundation('close');
+					$("#integration-form").hide();
+					listIntegrations();
+				});
+			},
+			error: function (error) {
+				$('#loading-block').foundation('close');
+				alert('error while saving data' + error);
+			}
+		});
+		/* 	}
+		console.log(jsonString); */
+	}
+ /*function removeIntegrationInstance(instanceId) {
+		$('#loading-block').foundation('open');
+		$.ajax({url: delete_instance_url+"?instanceId="+instanceId,
+			type:"DELETE",
+			async: false,
+			success: function(result){		
+				console.log("removeIntegrationInstance");
+				listIntegrations();
+			},
+            error: function (error) {
+                  alert('Failed to remove instance' + error);
+            }
+		});
+		$('#loading-block').foundation('close');
+	}
+	function removeAllIntegrationInstances(action) {
+		//$('#integation-form').hide();
+		$('#loading-block').foundation('open');
+		$.ajax({url: removeall_integration_instances_url+"?integration_id="+integration_id+"&token="+spark_token,
+			type:"DELETE",
+			async: false,
+			success: function(result){		
+				console.log("removeAllIntegrationInstances");
+				$("#instance-list-block").hide();
+				$("#remove-all-config").hide();
+				if(action="disconnect"){
+					disconnectIntegrationApp();
+				}
+			},
+            error: function (error) {
+                  alert('Failed to remove All Integration Instances' + error);
+            }
+		});
+		$('#loading-block').foundation('close');
+	}
+	function disconnectIntegrationApp() {
+		$.ajax({url: disconnect_integration_url+"?token="+spark_token+"&integrationId="+integration_id,
+			async: false,
+			type:"DELETE",
+			success: function(result){
+				disconnectIntegration();
+				console.log("success disconnectIntegration");
+			},
+            error: function (error) {
+                  alert('Failed to disconnect integration' + error);
+            }
+		});	
+	} */
+jsonData = {"lists":[{"id":"list1","name":"Choose a list..."},{"id":"list2","name":"Trello"},{"id":"list3","name":"Trello copy"},{"id":"list4","name":"inbox"}],
+		"commitEvents":[{ "name":"Commits pushed to the repository","id":"commitspushed","checked":false},{"name":"New comment on commit","id":"newcomment","checked":false}],
+		"issueOrPullReqEvents":[{"name":"Pull request opened or closed","id":"pullreqopenedorclosed","checked":false},{"name":"Issues opened or closed","id":"issueopendorclosed","checked":false},{"name":"New comment on issue or pull request","id":"newcommentonpullreqorissue","checked":false},{"name":"Only show titles of new issues and pull requests","id":"showtitlesofpullreqorcomments","checked":false}],
+		"deployEvents":[{"name":"Show deployment statuses","id":"deploymentstatuses","checked":false}],
+		"otherEvents":[{"name":"Branch or tag created or deleted","id":"Branchortagcreated_deleted","checked":false},{"name":"Branch force-pushed","id":"Branch_force_pushed","checked":false}],
+		"Rooms":[{"id":"room1","title":"Room1"},{"id":"room2","title":"Room2"},{"id":"room3","title":"Room3"}],
+		"profiles":[{"id":"profile1","displayName":"abc"}]};
+function loadForm(){
+	alert(2);
+	//console.log("spark_token.... "+spark_token);
+	//console.log("bitbucket_token.... "+integration_token);
+	document.getElementById("form").reset();
+	$("#repos").empty();
+	$("#rooms").empty();
+	$('#loading-block').foundation('open');
+	$.ajax({
+		//url: form_data_url+"?sparkAccessToken="+spark_token+"&integration_id="+integration_id+"&bitbucketAccessToken="+integration_token,
+		url : form_data_url,
+		async: false,
+		success: function(result){	
+			$('#integrations-block').hide();
+			var repos = jsonData.lists;
+			var rooms = jsonData.Rooms;
+			var profile = jsonData.profiles;
+		//	$("input#userid").val(profile[0].id);
+	    //	$("input#username").val(profile[0].displayName);
+			/* var profiles = $.parseJSON(result[1]);
+			var rooms = result[0].items;
+			var repos = $.parseJSON(result[2]);
+			
+			$("input#userid").val(profiles["profile"].id);
+			$("input#username").val(profiles["profile"].displayName);
+			$("input#ownername").val(repos["repos"].values[0].owner["username"]); */
+
+			$.each(repos, function(id,obj){
+				$("#repos").append($('<option>').text(obj.name).attr('value',obj.id));
+			}); 				
+			$.each(rooms, function(id,obj){
+				if(obj.id!='Y2lzY29zcGFyazovL3VzL1JPT00vN2JjMjJlMjAtMTk0NS0xMWU2LWE3ZDItNjU0MTA3MjNiZTVi')
+				$("#rooms").append($('<option>').text(obj.title).attr('value',obj.id));
+			});	
+			/* $('#integrations-block').hide(); */				
+			$('#integration-form').show();	
+		},
+        error: function (error) {
+              alert('error while loading the form data' + error);
+              $('#integation-form').hide();
+  			  $('#integrations-block').show();
+        }
+	});		
+	$('#loading-block').foundation('close');	
+}
+$(document).ready(function(){
+	$(document).foundation();
+	$('#add-config').click(function(){
+	alert(1);
+		loadForm();		
+		$('#integrations-block').hide();
+		$('#integration-form').show();
+	});
+	$("#repos").on('change',function(){
+		repo_modified=true;
+		console.log("repo_modified....");
+	});	
+	$("#rooms").on('change',function(){
+		room_modified=true;
+		console.log("room_modified....");
+	});			
+	$.fn.serializeObject = function() {
+		var o = {};
+		var a = this.serializeArray();
+		$.each(a, function() {
+			if (o[this.name] !== undefined) {
+				if (!o[this.name].push) {
+					o[this.name] = [o[this.name]];
+				}
+				o[this.name].push(this.value || '');
+			} else {
+				console.log(this);
+				o[this.name] = this.value || '';
+			}
+		});
+		return o;
+	};
+	
+	$("#submit-button").click(function (e){
+		e.preventDefault();
+		addOrUpdateInstance();
+		//resize();
+	});
+	
+	
+	$("#cancel-button").click(function (e){
+		e.preventDefault();
+		if(localStorage.getItem("gitHubFormData")!=null){
+		}else{
+			$("#instance-list-block").hide();
+		}
+		$('#integrations-block').show();
+		$('#integration-form').hide();
+		
+	});
+	$(document).on("click", "#instance-list-block .edit-config" , function(e) {
+		e.preventDefault();
+		document.getElementById("form").reset();
+		$("#rooms").empty();
+		$("#repos").empty();
+		$('#integrations-block').hide();
+		console.log("edit instance");
+	//	formAction="update";
+		repo_modified=false;
+		$("#submit-button").text("Save");
+	//	instanceId=this.id;
+	   var formData = localStorage.getItem("gitHubFormData");//static
+	   /* $.each(listResultData,function(index,value){
+			if(value["instanceId"]==instanceId) {
+				instanceData=value;
+			}
+		});
+		integration_token = instanceData.IntegrationToken[0].accessToken;
+		spark_token = instanceData.sparkToken[0].accessToken; */
+		loadForm();
+		$('#integration-form').show();
+		/* $("#rooms").val(instanceData.channelId);
+		var config=JSON.parse(instanceData.configJson);
+		$("#repos").val(config.repo_id);
+		$('#description').val(config.description);
+		repo_name_old = config.repo_name;
+		room_id_old = instanceData.channelId;
+		var notifications=config.notifications;
+		var commitEvents = notifications.commitEvents; */
+		var json = JSON.parse(formData);
+		console.log("after parsing "+JSON.stringify(json));
+		console.log("json.lists " + json.lists);
+		$("#repos").val(json.lists);
+		$("#rooms").val(json.room);
+		$('#description').val(json.description);
+		var commitEvents = json.commitEvents;
+	 	if($.isArray(commitEvents)) {
+			$.each(commitEvents,function(index,value){
+				$("input[type=checkbox][value="+value+"]").prop("checked",true);
+		    });
+		} else {
+			$("input[type=checkbox][value="+commitEvents+"]").prop("checked",true);
+		}
+		 
+		//var issueOrPullReqEvents = notifications.issueOrPullReqEvents;
+		var issueOrPullReqEvents = json.issueOrPullReqEvents;
+		if($.isArray(issueOrPullReqEvents)) {
+			$.each(issueOrPullReqEvents,function(index,value){
+				$("input[type=checkbox][value="+value+"]").prop("checked",true);		  
+			});
+		}else {
+			$("input[type=checkbox][value="+issueOrPullReqEvents+"]").prop("checked",true);
+		}
+		
+		//var deployEvents = notifications.deployEvents;
+		var deployEvents = json.deployEvents;
+		if($.isArray(deployEvents)) {
+			$.each(deployEvents,function(index,value){
+				$("input[type=checkbox][value="+value+"]").prop("checked",true);
+			});
+		} else {
+			$("input[type=checkbox][value="+deployEvents+"]").prop("checked",true);
+		}
+		var otherEvents = json.otherEvents;
+		if($.isArray(otherEvents)) {
+			$.each(otherEvents,function(index,value){
+				$("input[type=checkbox][value="+value+"]").prop("checked",true);
+			});
+		} else {
+			$("input[type=checkbox][value="+otherEvents+"]").prop("checked",true);
+		}
+	});
+	$(document).on("click", "#instance-list-block .remove-config" , function() {
+		console.log("test remove");
+		  var formData = localStorage.getItem("gitHubFormData");
+	      var formdata = JSON.parse(formData);
+	      var curroom = formdata.room;
+		document.getElementById('remove-msg').innerHTML="Are you Sure you  want to remove integration from this " + curroom+"?" ;					
+		instanceId=this.id;
+		resize();
+	});	
+	$('#remove-integration-btn').click(function(){
+		$('#remove-integration-popup').foundation('close');
+		localStorage.removeItem("gitHubFormData");
+		$("#instance-list-block").hide();
+	});
+	$(document).on("click", "#remove-all-config" , function() {
+		console.log("test remove all");
+		document.getElementById('remove-msg').innerHTML="Are you Sure you  want to remove all the integration instances?";
+		formAction="removeAll";			
+		resize();
+	});
+});
+</script>
+</head>
+<body>
+
+<div class="integration-app"><br> <br>
+		<div id="loading-block" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="loading-div-background">
+				<div class="loading-first-block">Please wait just a moment
+					while your app is loading</div>
+				<div class="loading-second-block"></div>
+				<div class="loading-image">
+					<img src="images/loadingImage.gif" alt=".....">
+				</div>
+			</div>
+		</div>
+		<div id="success-integration" class="reveal" data-reveal
+			data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="success-integration-first-block">Well done! Your
+				integration has been set up and is ready to use.</div>
+
+			<div class="large-5 medium-5 columns">
+				<div class="success-integration-second-block">
+					<!--<button class="secondary button" id="room-button">Go to
+						Content Testing Room</button>-->
+					<button class="button" id="done-button">Done</button>
+				</div>
+			</div>
+		</div>
+		<div class="reveal" id="remove-integration-popup" data-reveal data-options="closeOnClick:false;closeOnEsc:false;">
+			<div class="large-12 columns" style="width: 85%; height: 200px; ">
+				<div class="row">
+					<div class="large-1 medium-1 columns"><img alt="" src=""/>	</div>
+					<div class="large-6 medium-6 columns" style="float:left;"><span id="description-label">Bitbucket</span><br>
+						<span id="addedon-label"></span>
+					</div>
+				</div><br>
+				<p id="remove-msg"></p> 
+				<p id="remove-auth"></p>
+				<button class="close-button" data-close aria-label="Close modal" type="button">
+					<span aria-hidden="true">&times;</span>
+				</button><br><br>
+				<button class="button" id="remove-integration-btn" style="float:right">Remove</button>
+			</div>
+		</div>
+		<div class="integrations" id="integrations-block">
+			<div id="home" >
+				<div class="row">
+					<div class="large-12 medium-12 columns">							
+						<div class="large-6 medium-6 columns">Wunderlist Configurations</div>
+						<div class="large-4 medium-4 columns">
+							<button class="button" id="add-config">Add</button>
+							<button class="button" id="remove-all-config">Remove All</button>
+						</div>					
+					</div>
+				</div>
+				<hr>
+				<div id="instance-list-block" class="row">				
+				</div>
+			</div>
+		</div>
+		<div class="large-12 columns" id="integration-form">
+			<form name="form" id="form" method="post">
+				<div class="row">
+					<div class="large-12 columns">
+						<h3>Wunderlist Configuration</h3>
+						<br> <label><b>Lists</b></label>
+						<div class="large-6 medium-6 columns">Which lists
+							should we listen to events on?</div>
+						<div class="large-3 medium-3 columns">
+							<select name="lists" id="repos">
+							<option  value="">Select</option>
+							</select>
+						</div>
+						
+						<hr>
+					</div>
+				</div>
+				<div class="row">
+					<div class="large-12 columns">
+						<label><b>Events</b></label>
+						<div class="large-6 medium-6 columns">Notify me of important events via:
+													
+							</div>
+						<div class="large-6 medium-6 columns events">
+
+							<!--<label><b>Commit Events</b></label> -->
+							<div id="commitEvents" class="events-sub">
+							<label><input type="checkbox" name="commitEvents" value="Commitspushedtotherepository"/>Added</label>
+							<label><input type="checkbox" name="commitEvents" value="Newcommentoncommit"/>Completed</label>
+							</div>
+							<!--<label><b>Issue/Pull Request Events</b></label>
+							<div id="issueOrPullReqEvents" class="events-sub">
+							<label><input type="checkbox" name="issueOrPullReqEvents" value="Pullrequestopenedorclosed"/>Pull request opened or closed</label>
+							<label><input type="checkbox" name="issueOrPullReqEvents" value="Newcommentoncommit"/>Issues opened or closed</label>
+							<label><input type="checkbox" name="issueOrPullReqEvents" value="Newcommentonissueorpullrequest"/>New comment on issue or pull request</label>
+							<label><input type="checkbox" name="issueOrPullReqEvents" value="Onlyshowtitlesofnewissuesandpullrequests"/>Only show titles of new issues and pull requests</label>
+							</div>
+							<hr>
+							<label><b>Deploy Evevnts</b></label>
+							<div id="deployEvents" class="events-sub">
+							<label><input type="checkbox" name="deployEvents" value="Showdeploymentstatuses"/>Show deployment statuses</label>
+							</div><hr>
+							<label><b>Other Evevnts</b></label>
+							<div id="otherEvents" class="events-sub">
+							<label><input type="checkbox" name="otherEvents" value="Branchortagcreatedordeleted"/>Branch or tag created or deleted</label>
+							<label><input type="checkbox" name="otherEvents" value="Branchforcepushed"/>Branch force-pushed</label>
+							</div>-->
+						</div><hr>
+					</div>
+				</div>
+				<div class="row">
+				<div class="large-12 columns">
+					<h3>Spark Configuration</h3>
+					<br> 
+					<div class="large-8 medium-8 columns">
+						<div class="large-6 medium-6 columns" ><label><b>Room</b></label>
+						</div>
+						<div class="large-6 medium-6 columns" >
+							<select name="room"	id="rooms">
+							<option value="">Select</option>
+							</select>
+						</div>
+					</div><br>
+					<div class="large-8 medium-8 columns">
+						<div class="large-6 medium-6 columns" >
+							<label><b>Description</b></label>
+						</div>
+						<div class="large-6 medium-6 columns" >
+							<input type="text" name="description" id="description" value="">
+						</div>
+						<input type="hidden" name="userid" id="userid" value="">
+						<input type="hidden" name="username" id="username" value="">						
+						<!-- <input type="hidden" name="ownername" id="ownername" value=""> -->
+					</div><br>						
+				</div>
+			</div>
+			<div class="row">
+				<div class="large-6 medium-6 columns" >
+				</div><div class="large-4 medium-4 columns" >
+				</div>
+				<div class="large-4 medium-4 columns" >
+					<button class="button" id="cancel-button">Cancel</button>
+					<button class="button" id="submit-button">Add Integration</button>
+				</div>
+			</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"> 
+	<title>Market Place Dev</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.css" rel="stylesheet" type="text/css"> 
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/collab-ui.css" rel="stylesheet" type="text/css">
+	<link href="https://183.82.99.100:8443/CiscoWebcontent/css/styles.css" rel="stylesheet" type="text/css">  
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.2.3/foundation.min.js"></script> 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular.min.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-formly.js"></script>
+	<script src="https://183.82.99.100:8443/CiscoWebcontent/js/collab-ui.js"></script>
+	<script type="text/javascript" src="https://183.82.99.100:8443/CiscoWebcontent/js/porthole.min.js"></script>
+<style>
+.spark-marketplace {width:30%;float:left;}
+.iframe {width:70%;float:right;padding: 3rem;}
+#token {margin-bottom: 15px;}
+@media screen and (max-width: 600px) {
+	.spark-marketplace {width:100%;}
+	.iframe {width:100%;float:left;padding: 1.375rem;}
+} 
+</style>
+	<script type="text/javascript">	 
+	var guestDomain = 'cisco-spark-integration-management-new-dev.cloudhub.io';
+	function onMessage(messageEvent) {  
+		if (messageEvent.origin == "https://" + guestDomain) {
+			if (messageEvent.data["connectIntegration"]) {
+				if(messageEvent.data["statusCode"]==200){
+					console.log("connectIntegration");
+				} else {}	
+			}						
+			if (messageEvent.data["disconnectIntegration"]) {
+				if(messageEvent.data["statusCode"]==200){
+					console.log("disconnectIntegration");
+				} else {}
+			}	
+			if (messageEvent.data["resize"]) {
+				iFrameID = document.getElementById('guestFrame1');
+				var iframeHeight=messageEvent.data["height"]+"px";
+				iFrameID.setAttribute('height', iframeHeight);
+				//el.setAttribute('width', messageEvent.data["width"]+"px");
+				console.log("Height:::: "+$("#guestFrame1").height($("#guestFrame1").contents().height()));
+				
+				console.log("Market place height is "+iframeHeight);
+				//console.log("market place width is "+messageEvent.data["width"]);
+				//alert(10+iFrameID.contentWindow.document.body.scrollHeight + "px");
+			}
+		}
+	}
+
+	var windowProxy1;
+	window.onload=function(){ 
+			// Create a proxy window to send to and receive message from the guest iframe
+			windowProxy1 = new Porthole.WindowProxy('https://' + "183.82.99.100:8443" + '/CiscoWebcontent/proxy.html', 'guestFrame1');
+			windowProxy1.addEventListener(onMessage);			
+	};
+	$(document).ready(function(){
+		$("#add-config").click(function (e){
+			console.log("here");
+			var id = "Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwYTM3MTUyYWZjNjJkNTZhN2RkZTYwOTdlZjI1OTQ2YmU0NDY3NTcxMWZlZmE4MmNmYzQ3NjY5MjU1NzllZWQy";
+			var token = "Y2lzY29zcGFyazovL3VzL1BFT1BMRS9mMGU2OWMzYi1lMzU4LTQ3ZTUtODQyYy02MWMxMmRlNTVhY2Q";
+			var action = "CONNECT";
+			if(id==0){alert("Please select Integration");} else { 
+				sessionStorage.setItem('userId', token);
+				sessionStorage.setItem('integrationId', id)
+				console.log("in else...");
+				$("#guestFrame1").attr('src', "https://183.82.99.100:8443/CiscoWebcontent/html/box.html");
+			}
+		});
+	});
+
+	</script> 
+
+
+</head>
+
+<body >
+
+<div class="spark-marketplace">
+	<h1>DEV</h1>  <br>
+	<div class="large-12 medium-12 columns">
+		<div class="large-12 medium-12 columns" >
+			<div class="large-2 medium-2 columns" ><label><b>Integration App</b></label></div>						
+			<div class="large-10 medium-10 columns" >
+			<select name="int_id"  id="intId" class="dropdown">
+				<option value="Y2lzY29zcGFyazovL3VzL0FQUExJQ0FUSU9OL0MwYTM3MTUyYWZjNjJkNTZhN2RkZTYwOTdlZjI1OTQ2YmU0NDY3NTcxMWZlZmE4MmNmYzQ3NjY5MjU1NzllZWQy">Box</option>
+			</select>
+			<!--<input type="text" name="int_id" id="intId" value="1" placeholder="Id">-->
+			</div>
+		</div>
+	</div>
+</div>
+<br>
+<!--  <iframe id="guestFrame1" name="guestFrame1" width="500px" frameborder="0" src="http://183.82.99.100:7080/CiscoWebcontent/createbitbucket.html?integrationId=ABCDEF&token=1234567">
+-->
+<div class="iframe">
+	<iframe id="guestFrame1" name="guestFrame1" width="100%" frameborder="0" src="https://183.82.99.100:8443/CiscoWebcontent/html/box.html" >	</iframe>
+	<br><br>
+<!--<h3>Footer</h3>-->
+</div>
+</body>
+</html>
