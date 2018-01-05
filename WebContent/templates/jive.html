@@ -65,12 +65,12 @@
 			formAction="disconnect";
 			removeAllIntegrationInstances(formAction);
 		} else {
-			/*var app_code =   gup(document.referrer, 'code');
+			/*var app_code = gup(document.referrer, 'code');
 			if(app_code!="") {
 				generateIntegrationAppToken(app_code); 
 			} else {
 				validateIntegrationAppTokenDB();
-			}*//*re direction code*/
+			} */  /*re direction code*/
 			validateIntegrationAppTokenDB();
 		} 
   
@@ -184,7 +184,7 @@
 			   
 			   
 			   validateJiveDomain(jiveValidatePayload);							   
-			   //setIntegrationAppAuthDetails(jiveSubdomain); 
+			 //  setIntegrationAppAuthDetails(jiveSubdomain); 
 			   $('#jivedomain').val(jiveSubdomain01+domain);
 		   } else {
 				alert("Please enter your Jive Domain, ClientID and ClientSecrete");
@@ -385,7 +385,13 @@
 			console.log("Resp fff:: "+JSON.stringify(result));
 				if(result["postSpecificIntegrationSettings"][0]["domain"] !=undefined && result["postSpecificIntegrationSettings"][0]["domain"]!=null ){
 					isClientAppTokenValid = false;
-						setIntegrationAppAuthDetails();
+					var clientId001 =result["postSpecificIntegrationSettings"][0]["clientId"];
+					 jiveValidatePayload={};
+			   jiveValidatePayload["clientId001"] = result["postSpecificIntegrationSettings"][0]["clientId"];
+			   
+			   setIntegrationAppAuthDetails(jiveValidatePayload);	
+					console.log("clientId001  ::"+clientId001);
+						//setIntegrationAppAuthDetails();
 					}
 					else {
 						console.log("ur r consern admin");
@@ -433,8 +439,10 @@
 		});
 	}
 	//
-	function setIntegrationAppAuthDetails() {
+	function setIntegrationAppAuthDetails(jiveValidatePayload) {
 		console.log("c");
+		console.log(jiveValidatePayload["clientId001"]);
+		
 		console.log("........next auth connect");
 		var OAUTHURL    =   '';
 		var CLIENTID    =   '';
@@ -445,7 +453,7 @@
 				if(request.getResponseHeader('x-csrf-jwt') != null){
 					csrfJwt = request.getResponseHeader('x-csrf-jwt');
 				}
-				CLIENTID=result.clientId;
+				CLIENTID=jiveValidatePayload["clientId001"];
 				var authorizationEndpoint= result.authorizationEndpoint;
 				console.log("authorizatoin Endpoint "+authorizationEndpoint);
 				authorizationEndpoint=authorizationEndpoint.replace("eidiko", jiveSubdomain);
@@ -475,7 +483,7 @@
 		}
 		
 		var pollTimer = window.setInterval(function() { 
-			console.log("URL ::: "+win1.document.URL);
+			//console.log("URL ::: "+win1.document.URL);
 			try {
 			//alert("-----------valida1----------");
 				if (win1.document.URL.indexOf("code") != -1) {
@@ -499,28 +507,43 @@
 	}
 	function loginWithAuthDetails(oauthURL) {
 	console.log("d");
-        var win = window.open(oauthURL, "windowname1", 'width=700, height=600'); 
-		if(win){
+		isRedirect=true;
+		if(isRedirect) {
+			if(formAction=="add") {
+				window.top.location.href = oauthURL;
+			} else {
+				var authReqMsg ="";
+				authReqMsg+='<hr class="instance-hr"><div class="large-12 medium-12 columns instance-background">';
+				authReqMsg+='<div class="no-config-msg">You are not authorized to this integration. Click Add to continue.</div></div>';
+				$('#integrations-block').show();
+				$("#instance-list-block").html(authReqMsg);
+			}			
 		}else{
-			alert(popblockedMessage); 
-			return false;
+			var win = window.open(oauthURL, "windowname1", 'width=700, height=600'); 
+			if(win){
+			}else{
+				alert(popblockedMessage); 
+				return false;
+			}
+			var pollTimer = window.setInterval(function() { 
+				try {
+					if (win.document.URL.indexOf("code") != -1) {
+						window.clearInterval(pollTimer);
+						var url = win.document.URL;
+						accessCode =  gup(url, 'code');
+						console.log("accessCosde:: "+accessCode);
+						win.close();
+						
+						getIntegrationAppTokenDetails(accessCode);
+						
+					}
+				} catch(e) {
+					console.log('error while getting authorization code..'+e);
+				}
+			}, 100);
 		}
-        var pollTimer = window.setInterval(function() { 
-            try {
-                if (win.document.URL.indexOf("code") != -1) {
-                    window.clearInterval(pollTimer);
-                    var url = win.document.URL;
-                    accessCode =  gup(url, 'code');
-					console.log("accessCosde:: "+accessCode);
-                    win.close();
-					
-					getIntegrationAppTokenDetails(accessCode);
-					
-                }
-            } catch(e) {
-				console.log('error while getting authorization code..'+e);
-            }
-        }, 100);
+	
+        
     }
 	function getIntegrationAppTokenDetails(code) {
 	
